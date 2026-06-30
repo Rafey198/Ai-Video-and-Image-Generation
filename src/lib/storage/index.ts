@@ -118,3 +118,41 @@ export function getStorageProvider(): StorageProvider {
 }
 
 export { S3StorageProvider } from "./s3";
+
+/** Download a provider URL and persist to storage; falls back to the remote URL when S3 is unavailable. */
+export async function uploadRemoteUrlToStorage(
+  remoteUrl: string,
+  options: StorageUploadOptions & { folder: string }
+): Promise<{ url: string; key: string; mimeType: string }> {
+  const response = await fetch(remoteUrl);
+  if (!response.ok) {
+    throw new Error(`Failed to download remote asset: ${response.status}`);
+  }
+
+  const buffer = Buffer.from(await response.arrayBuffer());
+  const mimeType =
+    response.headers.get("content-type") ??
+    options.contentType ??
+    "application/octet-stream";
+
+  if (!isS3Configured()) {
+    return {
+      url: remoteUrl,
+      key: `${options.folder}/${randomUUID()}`,
+      mimeType,
+    };
+  }
+
+  try {
+    const storage = getStorageProvider();
+    const result = await storage.upload(buffer, { ...options, contentType: mimeType });
+    return { ...result, mimeType };
+  } catch (error) {
+    console.warn("[storage] Persist failed, using provider URL:", error);
+    return {
+      url: remoteUrl,
+      key: `${options.folder}/${randomUUID()}`,
+      mimeType,
+    };
+  }
+}

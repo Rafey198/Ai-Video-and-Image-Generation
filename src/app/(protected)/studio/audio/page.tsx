@@ -57,7 +57,10 @@ export default function AudioStudioPage() {
       if (data.media) {
         setResult(data.media as MediaItem);
         toast({ title: "Audio ready", description: "Your track has finished rendering." });
-      } else {
+      } else if (data.job?.id) {
+        if (data.job.status === "failed") {
+          throw new Error(data.job.errorMessage ?? "Generation failed");
+        }
         startJob({
           id: data.job.id,
           status: data.job.status,

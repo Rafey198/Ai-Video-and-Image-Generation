@@ -62,7 +62,7 @@ export default function ImageStudioPage() {
       const data = await parseApiJson<{
         error?: string;
         issues?: Record<string, string[]>;
-        job?: { id: string; status: string; progress?: number };
+        job?: { id: string; status: string; progress?: number; errorMessage?: string | null };
         media?: MediaItem;
       }>(res);
       if (!res.ok) throw new Error(formatApiError(data));
@@ -71,6 +71,9 @@ export default function ImageStudioPage() {
         setResult(data.media as MediaItem);
         toast({ title: "Generation complete", description: "Your image is ready." });
       } else if (data.job?.id) {
+        if (data.job.status === "failed") {
+          throw new Error(data.job.errorMessage ?? formatApiError(data));
+        }
         startJob({
           id: data.job.id,
           status: data.job.status as "queued" | "processing" | "completed" | "failed",

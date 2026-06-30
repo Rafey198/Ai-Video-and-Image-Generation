@@ -1,7 +1,7 @@
 import { JobStatus, MediaType } from "@prisma/client";
 
 import { isReplicateConfigured } from "@/lib/config/env";
-import { uploadRemoteUrlToStorage } from "@/lib/storage/s3";
+import { uploadRemoteUrlToStorage } from "@/lib/storage";
 import type {
   GenerationRequest,
   ProviderAdapter,

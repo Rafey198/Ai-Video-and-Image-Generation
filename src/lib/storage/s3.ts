@@ -110,26 +110,6 @@ export class S3StorageProvider implements StorageProvider {
   }
 }
 
-export async function uploadRemoteUrlToStorage(
-  remoteUrl: string,
-  options: StorageUploadOptions & { folder: string }
-): Promise<{ url: string; key: string; mimeType: string }> {
-  const response = await fetch(remoteUrl);
-  if (!response.ok) {
-    throw new Error(`Failed to download remote asset: ${response.status}`);
-  }
-
-  const buffer = Buffer.from(await response.arrayBuffer());
-  const mimeType =
-    response.headers.get("content-type") ??
-    options.contentType ??
-    "application/octet-stream";
-
-  const storage = new S3StorageProvider();
-  const result = await storage.upload(buffer, { ...options, contentType: mimeType });
-  return { ...result, mimeType };
-}
-
 export async function checkS3Health(): Promise<{
   ok: boolean;
   message: string;

@@ -151,6 +151,23 @@ export async function POST(request: Request) {
       });
     } else {
       await enqueueJob({ jobId: job.id, type });
+      processedJob = await processJob(job.id);
+
+      if (processedJob.status === JobStatus.completed) {
+        mediaAssets = await prisma.mediaAsset.findMany({
+          where: { jobId: job.id },
+          select: {
+            id: true,
+            type: true,
+            url: true,
+            thumbnailUrl: true,
+            mimeType: true,
+            width: true,
+            height: true,
+            duration: true,
+          },
+        });
+      }
     }
 
     return json({ job: processedJob, media: mediaAssets[0] ?? null, mediaAssets }, 201);

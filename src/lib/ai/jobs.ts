@@ -1,6 +1,6 @@
 import { JobStatus, MediaType, Prisma } from "@prisma/client";
 
-import { getProvider, resolveProviderForModel } from "@/lib/ai/providers";
+import { resolveProviderForModel } from "@/lib/ai/providers";
 import { calculateCreditCost } from "@/lib/credits/calculator";
 import { deductCredits, refundCredits } from "@/lib/credits/wallet";
 import { prisma } from "@/lib/db/prisma";
@@ -113,6 +113,40 @@ export async function createGenerationJob(input: CreateGenerationJobInput) {
   return job;
 }
 
+async function markJobFailed(
+  job: { id: string; userId: string; creditsCost: number; status: JobStatus },
+  message: string
+) {
+  if (job.status === JobStatus.failed || job.status === JobStatus.canceled) {
+    return prisma.generationJob.findUnique({ where: { id: job.id } });
+  }
+
+  const updated = await prisma.generationJob.update({
+    where: { id: job.id },
+    data: {
+      status: JobStatus.failed,
+      errorMessage: message.slice(0, 500),
+      completedAt: new Date(),
+    },
+  });
+
+  if (job.creditsCost > 0) {
+    try {
+      await refundCredits({
+        userId: job.userId,
+        amount: job.creditsCost,
+        jobId: job.id,
+        description: "Automatic refund for failed generation",
+        metadata: { error: message.slice(0, 200) },
+      });
+    } catch (refundError) {
+      console.error("[processJob] refund failed:", refundError);
+    }
+  }
+
+  return updated;
+}
+
 export async function processJob(jobId: string) {
   const job = await prisma.generationJob.findUnique({
     where: { id: jobId },
@@ -133,83 +167,95 @@ export async function processJob(jobId: string) {
     return job;
   }
 
-  const provider = await resolveProviderForModel(job.model.slug, job.model.provider?.slug);
+  if (job.status === JobStatus.failed) {
+    return job;
+  }
 
-  let providerJobId = job.providerJobId;
+  try {
+    const provider = await resolveProviderForModel(job.model.slug, job.model.provider?.slug);
 
-  if (!providerJobId) {
-    const submitted = await provider.submit({
-      jobId: job.id,
-      type: job.type,
-      prompt: job.prompt,
-      negativePrompt: job.negativePrompt,
-      settings: (job.settings as Record<string, unknown>) ?? {},
-      modelSlug: job.model.slug,
-      providerSlug: job.model.provider?.slug,
-    });
+    let providerJobId = job.providerJobId;
 
-    providerJobId = submitted.providerJobId;
+    if (!providerJobId) {
+      const submitted = await provider.submit({
+        jobId: job.id,
+        type: job.type,
+        prompt: job.prompt,
+        negativePrompt: job.negativePrompt,
+        settings: (job.settings as Record<string, unknown>) ?? {},
+        modelSlug: job.model.slug,
+        providerSlug: job.model.provider?.slug,
+      });
 
-    await prisma.generationJob.update({
+      providerJobId = submitted.providerJobId;
+
+      await prisma.generationJob.update({
+        where: { id: job.id },
+        data: {
+          providerJobId,
+          status: provider.mapStatus(submitted.status),
+          startedAt: new Date(),
+          progress: submitted.status === "processing" ? 10 : 0,
+        },
+      });
+    }
+
+    const pollResult = await provider.poll(providerJobId);
+    const status = provider.mapStatus(pollResult.status);
+
+    const updatedJob = await prisma.generationJob.update({
       where: { id: job.id },
       data: {
-        providerJobId,
-        status: provider.mapStatus(submitted.status),
-        startedAt: new Date(),
-        progress: submitted.status === "processing" ? 10 : 0,
+        status,
+        progress: pollResult.progress ?? (status === JobStatus.completed ? 100 : undefined),
+        errorMessage: pollResult.errorMessage,
+        completedAt: status === JobStatus.completed ? new Date() : undefined,
       },
     });
+
+    if (status === JobStatus.completed && pollResult.outputs?.length) {
+      const mediaType = provider.inferMediaType(job.type);
+
+      await prisma.$transaction(async (tx) => {
+        for (const output of pollResult.outputs!) {
+          await tx.mediaAsset.create({
+            data: {
+              userId: job.userId,
+              workspaceId: job.workspaceId,
+              jobId: job.id,
+              type: mediaType,
+              title: job.prompt?.slice(0, 120) ?? "Generated asset",
+              url: output.url,
+              thumbnailUrl: output.thumbnailUrl,
+              mimeType: output.mimeType,
+              width: output.width,
+              height: output.height,
+              duration: output.duration,
+              metadata: (output.metadata ?? {}) as Prisma.InputJsonValue,
+            },
+          });
+        }
+      });
+    }
+
+    if (status === JobStatus.failed) {
+      await refundCredits({
+        userId: job.userId,
+        amount: job.creditsCost,
+        jobId: job.id,
+        description: "Automatic refund for failed generation",
+        metadata: { error: pollResult.errorMessage },
+      });
+    }
+
+    return updatedJob;
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Generation failed unexpectedly";
+    console.error(`[processJob] ${jobId}:`, error);
+    const failed = await markJobFailed(job, message);
+    return failed ?? job;
   }
-
-  const pollResult = await provider.poll(providerJobId);
-  const status = provider.mapStatus(pollResult.status);
-
-  const updatedJob = await prisma.generationJob.update({
-    where: { id: job.id },
-    data: {
-      status,
-      progress: pollResult.progress ?? (status === JobStatus.completed ? 100 : undefined),
-      errorMessage: pollResult.errorMessage,
-      completedAt: status === JobStatus.completed ? new Date() : undefined,
-    },
-  });
-
-  if (status === JobStatus.completed && pollResult.outputs?.length) {
-    const mediaType = provider.inferMediaType(job.type);
-
-    await prisma.$transaction(async (tx) => {
-      for (const output of pollResult.outputs!) {
-        await tx.mediaAsset.create({
-          data: {
-            userId: job.userId,
-            workspaceId: job.workspaceId,
-            jobId: job.id,
-            type: mediaType,
-            title: job.prompt?.slice(0, 120) ?? "Generated asset",
-            url: output.url,
-            thumbnailUrl: output.thumbnailUrl,
-            mimeType: output.mimeType,
-            width: output.width,
-            height: output.height,
-            duration: output.duration,
-            metadata: (output.metadata ?? {}) as Prisma.InputJsonValue,
-          },
-        });
-      }
-    });
-  }
-
-  if (status === JobStatus.failed) {
-    await refundCredits({
-      userId: job.userId,
-      amount: job.creditsCost,
-      jobId: job.id,
-      description: "Automatic refund for failed generation",
-      metadata: { error: pollResult.errorMessage },
-    });
-  }
-
-  return updatedJob;
 }
 
 export async function cancelJob(jobId: string, userId?: string) {

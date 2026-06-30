@@ -51,6 +51,16 @@ export function handleApiError(error: unknown) {
     });
   }
 
+  if (error instanceof Error && error.message) {
+    const isInternal =
+      error.message.includes("Prisma") ||
+      error.message.includes("ECONNREFUSED") ||
+      error.message.includes("Unique constraint");
+    if (!isInternal) {
+      return errorResponse(error.message, 502);
+    }
+  }
+
   console.error("[API]", error);
   return errorResponse("Internal server error", 500);
 }

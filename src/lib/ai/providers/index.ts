@@ -52,7 +52,12 @@ export async function resolveProviderForModel(
   const demoMode = await getDemoMode();
   const { isReplicateModelMapped } = await import("@/lib/ai/providers/model-map");
 
-  if (!demoMode && isReplicateModelMapped(modelSlug) && isReplicateConfigured()) {
+  if (!demoMode && isReplicateModelMapped(modelSlug)) {
+    if (!isReplicateConfigured()) {
+      throw new Error(
+        "Live generation requires REPLICATE_API_TOKEN on the server (or enable demo mode in Admin → Settings)."
+      );
+    }
     return replicateProvider;
   }
 
