@@ -6,16 +6,23 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
+import { safeDbQuery } from "@/lib/db/safe-query";
+
+export const dynamic = "force-dynamic";
 
 export default async function ProjectsPage() {
   const session = await getSession();
   if (!session) return null;
 
-  const projects = await prisma.project.findMany({
-    where: { userId: session.user.id },
-    orderBy: { updatedAt: "desc" },
-    include: { _count: { select: { generationJobs: true, assets: true } } },
-  });
+  const projects = await safeDbQuery(
+    () =>
+      prisma.project.findMany({
+        where: { userId: session.user.id },
+        orderBy: { updatedAt: "desc" },
+        include: { _count: { select: { generationJobs: true, assets: true } } },
+      }),
+    []
+  );
 
   return (
     <div className="space-y-6">

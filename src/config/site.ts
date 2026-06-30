@@ -78,6 +78,7 @@ export const SOCIAL_LINKS = [
 
 export const DASHBOARD_NAV = [
   { href: "/dashboard", label: "Dashboard", icon: "LayoutDashboard" },
+  { href: "/digital-product", label: "Digital Product Studio", icon: "Package" },
   { href: "/studio/image", label: "Image Studio", icon: "Image" },
   { href: "/studio/video", label: "Video Studio", icon: "Video" },
   { href: "/studio/audio", label: "Audio Studio", icon: "Music" },

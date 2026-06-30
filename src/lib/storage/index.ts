@@ -43,6 +43,13 @@ export class LocalStorageProvider implements StorageProvider {
       "video/webm": ".webm",
       "audio/mpeg": ".mp3",
       "audio/wav": ".wav",
+      "application/pdf": ".pdf",
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation": ".pptx",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ".xlsx",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
+      "application/zip": ".zip",
+      "image/svg+xml": ".svg",
+      "application/json": ".json",
     };
     return map[mime] ?? "";
   }

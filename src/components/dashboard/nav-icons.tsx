@@ -20,6 +20,7 @@ import {
   LayoutDashboard,
   ListOrdered,
   Music,
+  Package,
   Palette,
   Rocket,
   ScrollText,
@@ -65,6 +66,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Webhook,
   Database,
   Rocket,
+  Package,
 };
 
 export function getNavIcon(name: string): LucideIcon {

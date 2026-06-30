@@ -83,6 +83,7 @@ model User {
   workspaceMembers   WorkspaceMember[]
   auditLogs          AdminAuditLog[]     @relation("AdminUser")
   moderatedEvents    ModerationEvent[]
+  digitalProducts    DigitalProduct[]
 
   @@index([email])
   @@index([role])
@@ -668,4 +669,291 @@ model ShowcaseItem {
 
   @@index([mediaType])
   @@index([featured])
+}
+
+// ─── AI Digital Product Studio ───────────────────────────────────────────────
+
+enum DigitalProductType {
+  one_pager
+  business_template
+  brochure
+  logo
+  branding_kit
+  spreadsheet
+  planner
+  bulk_pack
+}
+
+enum DigitalProductStatus {
+  draft
+  generating
+  ready
+  exported
+  failed
+  archived
+}
+
+enum GenerationDataMode {
+  user_provided
+  random_seed
+}
+
+enum ExportFormat {
+  pdf
+  png
+  jpg
+  svg
+  pptx
+  xlsx
+  docx
+  json
+  zip
+}
+
+model DigitalProduct {
+  id           String               @id @default(cuid())
+  userId       String
+  type         DigitalProductType
+  category     String
+  title        String
+  subtitle     String?
+  industry     String?
+  status       DigitalProductStatus @default(draft)
+  dataMode     GenerationDataMode   @default(user_provided)
+  contentJson  Json                 @default("{}")
+  designJson   Json                 @default("{}")
+  settingsJson Json                 @default("{}")
+  size         String?
+  previewUrl   String?
+  watermark    Boolean              @default(false)
+  favorite     Boolean              @default(false)
+  deletedAt    DateTime?
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  user            User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  generatedDesign GeneratedDesign?
+  logoProject     LogoProject?
+  brandKit        BrandKit?
+  spreadsheet     SpreadsheetTemplate?
+  exports         ExportHistory[]
+  libraryEntry    UserTemplateLibrary?
+
+  @@index([userId])
+  @@index([type])
+  @@index([category])
+  @@index([status])
+  @@index([createdAt])
+  @@index([deletedAt])
+}
+
+model TemplateCategory {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  productType DigitalProductType
+  description String?
+  icon        String?
+  sortOrder   Int      @default(0)
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  templates Template[]
+
+  @@index([productType])
+  @@index([enabled])
+}
+
+model Template {
+  id              String             @id @default(cuid())
+  categoryId      String
+  slug            String             @unique
+  name            String
+  description     String?
+  productType     DigitalProductType
+  difficulty      String             @default("intermediate")
+  defaultSize     String?
+  pageCount       Int                @default(1)
+  tabCount        Int                @default(1)
+  exportFormats   Json               @default("[]")
+  previewUrl      String?
+  thumbnailUrl    String?
+  contentTemplate Json               @default("{}")
+  designTemplate  Json               @default("{}")
+  featured        Boolean            @default(false)
+  enabled         Boolean            @default(true)
+  sortOrder       Int                @default(0)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  category TemplateCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@index([categoryId])
+  @@index([productType])
+  @@index([featured])
+  @@index([enabled])
+}
+
+model GeneratedDesign {
+  id          String   @id @default(cuid())
+  productId   String   @unique
+  userId      String
+  title       String
+  subtitle    String?
+  industry    String?
+  contentJson Json     @default("{}")
+  designJson  Json     @default("{}")
+  version     Int      @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  product DigitalProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model LogoProject {
+  id            String   @id @default(cuid())
+  productId     String   @unique
+  userId        String
+  businessName  String
+  tagline       String?
+  briefJson     Json     @default("{}")
+  conceptsJson  Json     @default("[]")
+  selectedIndex Int?
+  svgContent    String?  @db.Text
+  rationale     String?  @db.Text
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  product DigitalProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model BrandKit {
+  id              String   @id @default(cuid())
+  productId       String   @unique
+  userId          String
+  colorPalette    Json     @default("[]")
+  typography      Json     @default("{}")
+  brandVoice      String?
+  usageRules      Json     @default("[]")
+  spacingGuide    Json     @default("{}")
+  doDontExamples  Json     @default("[]")
+  guidePdfUrl     String?
+  faviconUrl      String?
+  socialIconUrl   String?
+  zipUrl          String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  product DigitalProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model SpreadsheetTemplate {
+  id           String   @id @default(cuid())
+  productId    String   @unique
+  userId       String
+  templateType String
+  tabCount     Int      @default(1)
+  theme        String?
+  mode         String   @default("sample")
+  workbookJson Json     @default("{}")
+  xlsxUrl      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  product DigitalProduct    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sheets  SpreadsheetSheet[]
+
+  @@index([userId])
+  @@index([templateType])
+}
+
+model SpreadsheetSheet {
+  id           String @id @default(cuid())
+  spreadsheetId String
+  name         String
+  sortOrder    Int    @default(0)
+  sheetJson    Json   @default("{}")
+  formulas     Json   @default("[]")
+
+  spreadsheet SpreadsheetTemplate @relation(fields: [spreadsheetId], references: [id], onDelete: Cascade)
+
+  @@index([spreadsheetId])
+}
+
+model ExportHistory {
+  id         String       @id @default(cuid())
+  userId     String
+  productId  String
+  format     ExportFormat
+  fileUrl    String
+  fileSize   Int?
+  signedUrl  String?
+  expiresAt  DateTime?
+  metadata   Json         @default("{}")
+  createdAt  DateTime     @default(now())
+
+  product DigitalProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([productId])
+  @@index([createdAt])
+}
+
+model UserTemplateLibrary {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String   @unique
+  tags      Json     @default("[]")
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  product DigitalProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model SeedBusinessData {
+  id          String   @id @default(cuid())
+  recordType  String
+  industry    String?
+  category    String?
+  content     Json     @default("{}")
+  tags        Json     @default("[]")
+  locale      String   @default("en")
+  createdAt   DateTime @default(now())
+
+  @@index([recordType])
+  @@index([industry])
+  @@index([category])
+}
+
+model SeedIndustryData {
+  id          String   @id @default(cuid())
+  industry    String
+  subcategory String?
+  data        Json     @default("{}")
+  createdAt   DateTime @default(now())
+
+  @@index([industry])
+}
+
+model SeedSpreadsheetData {
+  id           String   @id @default(cuid())
+  templateType String
+  tabName      String
+  category     String?
+  data         Json     @default("{}")
+  formulas     Json     @default("[]")
+  createdAt    DateTime @default(now())
+
+  @@index([templateType])
+  @@index([category])
 }

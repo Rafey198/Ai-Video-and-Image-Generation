@@ -190,17 +190,31 @@ S3_PUBLIC_URL=https://cdn.yourdomain.com
 
 ## Vercel Deployment
 
+> **Required:** Add `DATABASE_URL` in Vercel → Project → Settings → Environment Variables **before** deploying. Without it, auth, dashboard, and generation features will not work at runtime.
+
+### Minimum Vercel environment variables
+
+```env
+DATABASE_URL=postgresql://...          # Required — Neon, Supabase, or Vercel Postgres
+NEXTAUTH_SECRET=your-random-secret   # Required — 32+ character random string
+NEXTAUTH_URL=https://your-app.vercel.app
+NEXT_PUBLIC_APP_URL=https://your-app.vercel.app
+NEXT_PUBLIC_DEMO_MODE=true
+STORAGE_PROVIDER=local
+```
+
+### Deploy steps
+
 1. **Import** the GitHub repository in [Vercel](https://vercel.com)
-2. **Add environment variables** from `.env.example`
+2. **Add environment variables** above (especially `DATABASE_URL`)
 3. **Connect PostgreSQL** — Use Vercel Postgres, Neon, or Supabase
-4. **Set build command:** `prisma generate && next build`
-5. **Run migration** after first deploy:
+4. **Deploy** — Build command: `prisma generate && next build`
+5. **Initialize database** after first deploy (from your machine or Vercel CLI):
    ```bash
    npx prisma db push
    npm run db:seed
    ```
-6. **Configure storage** — Set S3/R2 credentials for production
-7. **Deploy**
+6. **Configure storage** — Set S3/R2 credentials for production file uploads
 
 ### Post-Deploy Checklist
 

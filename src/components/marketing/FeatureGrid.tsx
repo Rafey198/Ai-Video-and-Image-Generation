@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import {
   AudioLines,
+  FileText,
   Film,
   Image,
   Layers,
@@ -61,6 +62,12 @@ const DEFAULT_FEATURES: Feature[] = [
     title: "Style Presets",
     description:
       "Apply curated style presets or build your own for consistent brand output.",
+  },
+  {
+    icon: FileText,
+    title: "AI Digital Product Studio",
+    description:
+      "Generate one-pagers, brochures, logos, Excel templates, planners, and complete digital product packs.",
   },
 ];
 

@@ -2,14 +2,26 @@ import { CreativeEngine3DDynamic } from "@/components/3d/dynamic";
 import { AdminStatsCards } from "@/components/admin/AdminStatsCards";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { prisma } from "@/lib/db/prisma";
+import { safeDbQuery } from "@/lib/db/safe-query";
 import type { AdminStat } from "@/lib/types/components";
+
+export const dynamic = "force-dynamic";
 
 export default async function AdminOverviewPage() {
   const [userCount, jobCount, activeJobs, totalCredits] = await Promise.all([
-    prisma.user.count(),
-    prisma.generationJob.count(),
-    prisma.generationJob.count({ where: { status: { in: ["queued", "processing"] } } }),
-    prisma.creditWallet.aggregate({ _sum: { balance: true } }),
+    safeDbQuery(() => prisma.user.count(), 0),
+    safeDbQuery(() => prisma.generationJob.count(), 0),
+    safeDbQuery(
+      () =>
+        prisma.generationJob.count({
+          where: { status: { in: ["queued", "processing"] } },
+        }),
+      0
+    ),
+    safeDbQuery(
+      () => prisma.creditWallet.aggregate({ _sum: { balance: true } }),
+      { _sum: { balance: 0 } }
+    ),
   ]);
 
   const stats: AdminStat[] = [

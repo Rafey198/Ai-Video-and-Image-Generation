@@ -1,5 +1,6 @@
 import { errorResponse, handleApiError, json } from "@/lib/api/handler";
 import { prisma } from "@/lib/db/prisma";
+import { isDatabaseConfigured, safeDbQuery } from "@/lib/db/safe-query";
 import { rateLimitByIp } from "@/lib/security/rate-limit";
 
 export async function GET(request: Request) {
@@ -7,6 +8,10 @@ export async function GET(request: Request) {
     const rateLimit = rateLimitByIp(request, "models:list");
     if (!rateLimit.success) {
       return errorResponse("Too many requests", 429);
+    }
+
+    if (!isDatabaseConfigured()) {
+      return json({ models: [], count: 0 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -24,26 +29,30 @@ export async function GET(request: Request) {
             ? false
             : undefined;
 
-    const models = await prisma.aiModel.findMany({
-      where: {
-        ...(category ? { category } : {}),
-        ...(taskType ? { taskType } : {}),
-        ...(enabled !== undefined ? { enabled } : {}),
-        ...(featured === "true" ? { featured: true } : {}),
-      },
-      include: {
-        provider: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            healthy: true,
+    const models = await safeDbQuery(
+      () =>
+        prisma.aiModel.findMany({
+          where: {
+            ...(category ? { category } : {}),
+            ...(taskType ? { taskType } : {}),
+            ...(enabled !== undefined ? { enabled } : {}),
+            ...(featured === "true" ? { featured: true } : {}),
           },
-        },
-        capabilities: true,
-      },
-      orderBy: [{ featured: "desc" }, { name: "asc" }],
-    });
+          include: {
+            provider: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                healthy: true,
+              },
+            },
+            capabilities: true,
+          },
+          orderBy: [{ featured: "desc" }, { name: "asc" }],
+        }),
+      []
+    );
 
     return json({ models, count: models.length });
   } catch (error) {

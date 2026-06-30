@@ -3,6 +3,9 @@ import { redirect } from "next/navigation";
 import { DashboardLayoutClient } from "@/components/dashboard/DashboardLayoutClient";
 import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
+import { safeDbQuery } from "@/lib/db/safe-query";
+
+export const dynamic = "force-dynamic";
 
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
@@ -11,12 +14,19 @@ export default async function ProtectedLayout({ children }: { children: React.Re
   }
 
   const [wallet, notifications] = await Promise.all([
-    prisma.creditWallet.findUnique({ where: { userId: session.user.id } }),
-    prisma.notification.findMany({
-      where: { userId: session.user.id },
-      orderBy: { createdAt: "desc" },
-      take: 20,
-    }),
+    safeDbQuery(
+      () => prisma.creditWallet.findUnique({ where: { userId: session.user.id } }),
+      null
+    ),
+    safeDbQuery(
+      () =>
+        prisma.notification.findMany({
+          where: { userId: session.user.id },
+          orderBy: { createdAt: "desc" },
+          take: 20,
+        }),
+      []
+    ),
   ]);
 
   return (

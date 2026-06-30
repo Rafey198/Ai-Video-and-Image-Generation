@@ -6,7 +6,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
+import { safeDbQuery } from "@/lib/db/safe-query";
 import { cn, formatCredits } from "@/lib/utils";
+
+export const dynamic = "force-dynamic";
 
 const STATUS_STYLES: Record<string, string> = {
   queued: "bg-muted text-muted-foreground",
@@ -26,12 +29,16 @@ export default async function HistoryPage() {
   const session = await getSession();
   if (!session) return null;
 
-  const jobs = await prisma.generationJob.findMany({
-    where: { userId: session.user.id },
-    include: { model: { select: { name: true } } },
-    orderBy: { createdAt: "desc" },
-    take: 50,
-  });
+  const jobs = await safeDbQuery(
+    () =>
+      prisma.generationJob.findMany({
+        where: { userId: session.user.id },
+        include: { model: { select: { name: true } } },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+      }),
+    []
+  );
 
   return (
     <div className="space-y-6">

@@ -1709,6 +1709,9 @@ async function main() {
     },
   });
 
+  const { seedDigitalProductData } = await import("./seed-digital-product");
+  await seedDigitalProductData(prisma);
+
   console.log(`✅ Seeded ${MODELS.length} AI models across ${PROVIDERS.length} providers`);
   console.log(`✅ Admin: ${ADMIN_EMAIL} / ${ADMIN_PASSWORD}`);
   console.log(`✅ Demo:  ${DEMO_EMAIL} / ${DEMO_PASSWORD}`);

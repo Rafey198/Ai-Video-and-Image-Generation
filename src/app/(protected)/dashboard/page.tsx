@@ -17,8 +17,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
+import { safeDbQuery } from "@/lib/db/safe-query";
 import { formatCredits } from "@/lib/utils";
 import type { JobSummary, MediaItem, UsageDataPoint } from "@/lib/types/components";
+
+export const dynamic = "force-dynamic";
 
 const QUICK_ACTIONS = [
   { href: "/studio/image", label: "Image Studio", icon: Image, color: "text-violet-electric" },
@@ -62,25 +65,44 @@ export default async function DashboardPage() {
   weekAgo.setDate(weekAgo.getDate() - 7);
 
   const [wallet, jobs, media, transactions, jobCount] = await Promise.all([
-    prisma.creditWallet.findUnique({ where: { userId: session.user.id } }),
-    prisma.generationJob.findMany({
-      where: { userId: session.user.id },
-      include: { model: { select: { name: true } } },
-      orderBy: { createdAt: "desc" },
-      take: 5,
-    }),
-    prisma.mediaAsset.findMany({
-      where: { userId: session.user.id },
-      orderBy: { createdAt: "desc" },
-      take: 8,
-    }),
-    prisma.creditTransaction.findMany({
-      where: { userId: session.user.id, createdAt: { gte: weekAgo } },
-      select: { amount: true, createdAt: true },
-    }),
-    prisma.generationJob.count({
-      where: { userId: session.user.id, createdAt: { gte: weekAgo } },
-    }),
+    safeDbQuery(
+      () => prisma.creditWallet.findUnique({ where: { userId: session.user.id } }),
+      null
+    ),
+    safeDbQuery(
+      () =>
+        prisma.generationJob.findMany({
+          where: { userId: session.user.id },
+          include: { model: { select: { name: true } } },
+          orderBy: { createdAt: "desc" },
+          take: 5,
+        }),
+      []
+    ),
+    safeDbQuery(
+      () =>
+        prisma.mediaAsset.findMany({
+          where: { userId: session.user.id },
+          orderBy: { createdAt: "desc" },
+          take: 8,
+        }),
+      []
+    ),
+    safeDbQuery(
+      () =>
+        prisma.creditTransaction.findMany({
+          where: { userId: session.user.id, createdAt: { gte: weekAgo } },
+          select: { amount: true, createdAt: true },
+        }),
+      []
+    ),
+    safeDbQuery(
+      () =>
+        prisma.generationJob.count({
+          where: { userId: session.user.id, createdAt: { gte: weekAgo } },
+        }),
+      0
+    ),
   ]);
 
   const jobSummaries: JobSummary[] = jobs.map((job) => ({
