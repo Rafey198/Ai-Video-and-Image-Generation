@@ -192,23 +192,61 @@ S3_PUBLIC_URL=https://cdn.yourdomain.com
 
 > **Required:** Add `DATABASE_URL` in Vercel → Project → Settings → Environment Variables **before** deploying. Without it, auth, dashboard, and generation features will not work at runtime.
 
-### Minimum Vercel environment variables
+The repo includes `vercel.json` with build command `prisma generate && next build`. `postinstall` in `package.json` also runs `prisma generate` after `npm install`.
+
+### Vercel environment variables
+
+Copy from `.env.example` and set values in Vercel → Project → Settings → Environment Variables. **Never commit `.env` or paste secrets into the repo.**
+
+| Variable | Required | Notes |
+|----------|----------|-------|
+| `DATABASE_URL` | **Yes** | PostgreSQL connection string (Neon, Supabase, or Vercel Postgres) |
+| `NEXTAUTH_SECRET` | **Yes** | 32+ character random string |
+| `NEXTAUTH_URL` | **Yes** | `https://your-app.vercel.app` |
+| `NEXT_PUBLIC_APP_URL` | **Yes** | Same as `NEXTAUTH_URL` |
+| `NEXT_PUBLIC_DEMO_MODE` | **Yes** | `true` for demo; `false` for production providers |
+| `STORAGE_PROVIDER` | **Yes** | `local` (ephemeral on Vercel) or `s3` for R2/S3 |
+| `AUTH_GOOGLE_ID` | No | Google OAuth client ID |
+| `AUTH_GOOGLE_SECRET` | No | Google OAuth client secret |
+| `LOCAL_UPLOAD_DIR` | No | Local storage path override (dev only) |
+| `S3_ENDPOINT` | If `s3` | R2/S3 endpoint URL |
+| `S3_ACCESS_KEY_ID` | If `s3` | R2/S3 access key |
+| `S3_SECRET_ACCESS_KEY` | If `s3` | R2/S3 secret key |
+| `S3_BUCKET` | If `s3` | Bucket name |
+| `S3_REGION` | If `s3` | `auto` for Cloudflare R2 |
+| `S3_PUBLIC_URL` | If `s3` | Public CDN base URL |
+| `REDIS_URL` | No | Redis for job queue (in-memory fallback if empty) |
+| `STRIPE_SECRET_KEY` | No | Stripe billing (disabled if empty) |
+| `STRIPE_WEBHOOK_SECRET` | No | Stripe webhook signing secret |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | No | Stripe publishable key |
+| `HUGGINGFACE_API_KEY` | No | Hugging Face inference |
+| `REPLICATE_API_TOKEN` | No | Replicate API |
+| `COMFYUI_ENDPOINT` | No | ComfyUI worker URL |
+| `CUSTOM_WORKER_ENDPOINT` | No | Custom GPU worker URL |
+| `CUSTOM_WORKER_API_KEY` | No | Custom worker auth token |
+| `OPENAI_API_KEY` | No | OpenAI for prompt enhancement |
+| `OPENAI_MODEL` | No | Default: `gpt-4o-mini` |
+| `DEFAULT_AI_PROVIDER` | No | Default: `replicate` (use `mock` in demo mode) |
+| `EXPORT_WORKER_URL` | No | PDF/export microservice URL |
+| `WEBHOOK_SECRET` | No | Job webhook HMAC secret (recommended in production) |
+
+### Minimum production set
 
 ```env
-DATABASE_URL=postgresql://...          # Required — Neon, Supabase, or Vercel Postgres
-NEXTAUTH_SECRET=your-random-secret   # Required — 32+ character random string
+DATABASE_URL=
+NEXTAUTH_SECRET=
 NEXTAUTH_URL=https://your-app.vercel.app
 NEXT_PUBLIC_APP_URL=https://your-app.vercel.app
 NEXT_PUBLIC_DEMO_MODE=true
-STORAGE_PROVIDER=local
+STORAGE_PROVIDER=s3
 ```
 
 ### Deploy steps
 
 1. **Import** the GitHub repository in [Vercel](https://vercel.com)
-2. **Add environment variables** above (especially `DATABASE_URL`)
+2. **Add environment variables** from the table above (at minimum `DATABASE_URL` and auth vars)
 3. **Connect PostgreSQL** — Use Vercel Postgres, Neon, or Supabase
-4. **Deploy** — Build command: `prisma generate && next build`
+4. **Deploy** — Vercel uses `vercel.json` build: `prisma generate && next build`
 5. **Initialize database** after first deploy (from your machine or Vercel CLI):
    ```bash
    npx prisma db push
@@ -220,9 +258,11 @@ STORAGE_PROVIDER=local
 
 - [ ] Set strong `NEXTAUTH_SECRET`
 - [ ] Configure production `DATABASE_URL`
-- [ ] Set up S3/R2 storage
+- [ ] Set `NEXTAUTH_URL` and `NEXT_PUBLIC_APP_URL` to your Vercel domain
+- [ ] Set up S3/R2 storage (required for persistent uploads on Vercel)
 - [ ] Configure Stripe keys (if billing enabled)
-- [ ] Set `NEXT_PUBLIC_DEMO_MODE=false` for production
+- [ ] Set `WEBHOOK_SECRET` for job webhooks in production
+- [ ] Set `NEXT_PUBLIC_DEMO_MODE=false` when enabling real AI providers
 - [ ] Verify model licenses before enabling real providers
 - [ ] Run trademark/domain legal review
 
