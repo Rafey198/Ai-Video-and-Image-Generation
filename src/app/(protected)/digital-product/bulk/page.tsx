@@ -14,6 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { ExportDropdown } from "@/components/digital-product/ExportDropdown";
 import { toast } from "@/components/ui/toast";
+import { parseApiJson } from "@/lib/utils/parse-api-json";
 import { BULK_PACK_TYPES } from "@/lib/digital-product/constants";
 
 export default function BulkPackPage() {
@@ -40,8 +41,8 @@ export default function BulkPackPage() {
         }),
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      const data = await parseApiJson<{ products: { id: string }[]; error?: string }>(res);
+      if (!res.ok) throw new Error(data.error ?? "Generation failed");
 
       setProductId(data.products[0].id);
       toast({ title: "Digital pack generated!", description: "Export as ZIP for the complete bundle." });

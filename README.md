@@ -136,10 +136,19 @@ Open [http://localhost:3000](http://localhost:3000)
 
 ### Seed Accounts
 
-| Role | Email | Password |
-|------|-------|----------|
-| Admin | admin@vireomorph.dev | Admin123! |
-| Demo User | demo@vireomorph.dev | Demo123! |
+| Role | Email | Password | Use for |
+|------|-------|----------|---------|
+| **Test Admin** | `admin@vireomorph.dev` | `Admin123!` | Live model testing, all studios, admin panel |
+| Demo User | `demo@vireomorph.dev` | `Demo123!` | Regular user flow |
+
+**Live testing setup (demo mode OFF):**
+
+```bash
+npx prisma db push
+npm run db:ensure-test-admin
+```
+
+This upserts the test admin with **999,999 credits**, **enterprise plan**, and turns **demo mode OFF** in the database — without wiping your data.
 
 ## Demo Mode
 

@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { createGenerationJob, processJob } from "@/lib/ai/jobs";
 import { errorResponse, handleApiError, json } from "@/lib/api/handler";
-import { requireAuth } from "@/lib/auth/session";
+import { requireAuth, isAdminRole } from "@/lib/auth/session";
 import { getDemoMode } from "@/lib/config/runtime";
 import { prisma } from "@/lib/db/prisma";
 import { enqueueJob } from "@/lib/queue";
@@ -17,22 +17,36 @@ import {
 
 const jobTypeSchema = z.enum(["image", "video", "audio", "sync"]);
 
+function cleanJobPayload(body: unknown): Record<string, unknown> {
+  if (typeof body !== "object" || body === null) {
+    return {};
+  }
+
+  const { type: _ignored, ...rest } = body as Record<string, unknown>;
+  const cleaned: Record<string, unknown> = {};
+
+  for (const [key, value] of Object.entries(rest)) {
+    if (value === null || value === "") continue;
+    cleaned[key] = value;
+  }
+
+  return cleaned;
+}
+
 function parseJobBody(body: unknown) {
-  const type = jobTypeSchema.parse(
-    typeof body === "object" && body !== null && "type" in body
-      ? (body as { type: unknown }).type
-      : undefined
-  );
+  const raw = typeof body === "object" && body !== null ? (body as Record<string, unknown>) : {};
+  const type = jobTypeSchema.parse(raw.type);
+  const payload = cleanJobPayload(body);
 
   switch (type) {
     case "image":
-      return { type, ...imageGenerationSchema.parse(body) };
+      return { type, ...imageGenerationSchema.parse(payload) };
     case "video":
-      return { type, ...videoGenerationSchema.parse(body) };
+      return { type, ...videoGenerationSchema.parse(payload) };
     case "audio":
-      return { type, ...audioGenerationSchema.parse(body) };
+      return { type, ...audioGenerationSchema.parse(payload) };
     case "sync":
-      return { type, ...syncGenerationSchema.parse(body) };
+      return { type, ...syncGenerationSchema.parse(payload) };
   }
 }
 
@@ -84,7 +98,7 @@ export async function POST(request: Request) {
     const session = await requireAuth();
 
     const rateLimit = generationRateLimit(`jobs:create:${session.user.id}`);
-    if (!rateLimit.success) {
+    if (!rateLimit.success && !isAdminRole(session.user.role)) {
       return errorResponse("Generation rate limit exceeded", 429);
     }
 

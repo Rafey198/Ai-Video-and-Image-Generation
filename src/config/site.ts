@@ -98,6 +98,7 @@ export const ADMIN_NAV = [
   { href: "/admin", label: "Overview", icon: "LayoutDashboard" },
   { href: "/admin/users", label: "Users", icon: "Users" },
   { href: "/admin/models", label: "Model Registry", icon: "Cpu" },
+  { href: "/admin/model-tests", label: "Live Model Tests", icon: "FlaskConical" },
   { href: "/admin/providers", label: "Providers", icon: "Server" },
   { href: "/admin/jobs", label: "Job Queue", icon: "ListOrdered" },
   { href: "/admin/storage", label: "Storage", icon: "HardDrive" },

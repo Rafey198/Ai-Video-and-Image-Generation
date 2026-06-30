@@ -44,6 +44,21 @@ export async function getProvider(slug?: string | null): Promise<ProviderAdapter
   return provider;
 }
 
+/** Prefer Replicate when a registry slug has a live mapping and demo mode is off. */
+export async function resolveProviderForModel(
+  modelSlug: string,
+  providerSlug?: string | null
+): Promise<ProviderAdapter> {
+  const demoMode = await getDemoMode();
+  const { isReplicateModelMapped } = await import("@/lib/ai/providers/model-map");
+
+  if (!demoMode && isReplicateModelMapped(modelSlug) && isReplicateConfigured()) {
+    return replicateProvider;
+  }
+
+  return getProvider(providerSlug);
+}
+
 export function listProviders(): ProviderAdapter[] {
   return Array.from(providers.values());
 }

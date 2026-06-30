@@ -16,6 +16,7 @@ import { TemplatePreview } from "@/components/digital-product/TemplatePreview";
 import { ExportDropdown } from "@/components/digital-product/ExportDropdown";
 import { GENERATION_COUNTS, CANVA_HELPER_TEXT } from "@/lib/digital-product/constants";
 import type { TemplateDesignJson } from "@/lib/digital-product/types";
+import { parseApiJson } from "@/lib/utils/parse-api-json";
 
 type GeneratorFormProps = {
   type: DigitalProductType;
@@ -75,7 +76,7 @@ export function GeneratorForm({
         }),
       });
 
-      const data = await res.json();
+      const data = await parseApiJson<{ products: { id: string; designJson: TemplateDesignJson }[]; count: number; error?: string }>(res);
       if (!res.ok) throw new Error(data.error ?? "Generation failed");
 
       const product = data.products[0];
@@ -102,7 +103,7 @@ export function GeneratorForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ productId, target }),
       });
-      const data = await res.json();
+      const data = await parseApiJson<{ design: TemplateDesignJson; error?: string }>(res);
       if (!res.ok) throw new Error(data.error);
       setDesign(data.design);
       toast({ title: "Regenerated", description: `Updated ${target.replace(/_/g, " ")}.` });

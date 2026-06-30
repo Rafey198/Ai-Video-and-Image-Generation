@@ -15,14 +15,52 @@ const negativePromptField = z
   .optional();
 
 const aspectRatioField = z
-  .enum(["1:1", "16:9", "9:16", "4:3", "3:4", "21:9"])
+  .string()
+  .trim()
+  .regex(/^\d+:\d+$/, "Invalid aspect ratio")
   .optional();
 
 const resolutionField = z
-  .enum(["480p", "720p", "1080p", "1440p", "4k"])
-  .optional();
+  .string()
+  .trim()
+  .min(2)
+  .max(20)
+  .optional()
+  .default("1080p");
 
-const seedField = z.number().int().min(0).max(2_147_483_647).optional();
+/** Parse registry/UI resolution strings into a pixel height for providers. */
+export function resolutionToPixels(resolution?: string | null): number {
+  if (!resolution) return 768;
+  switch (resolution) {
+    case "4k":
+      return 2160;
+    case "1440p":
+    case "1536px":
+      return 1440;
+    case "1080p":
+    case "1024px":
+      return 1080;
+    case "720p":
+    case "768px":
+      return 768;
+    case "480p":
+    case "512px":
+      return 512;
+    default: {
+      const match = resolution.match(/^(\d+)px$/i);
+      return match ? Number(match[1]) : 768;
+    }
+  }
+}
+
+const seedField = z.preprocess(
+  (value) => {
+    if (value === null || value === "" || value === undefined) return undefined;
+    const num = Number(value);
+    return Number.isFinite(num) ? num : undefined;
+  },
+  z.number().int().min(0).max(2_147_483_647).optional()
+);
 
 const modelSlugField = z
   .string()
@@ -40,7 +78,10 @@ export const imageGenerationSchema = z.object({
   aspectRatio: aspectRatioField,
   resolution: resolutionField.default("1080p"),
   seed: seedField,
-  batchSize: z.number().int().min(1).max(4).default(1),
+  batchSize: z.preprocess(
+    (value) => (value === undefined || value === null ? 1 : Number(value)),
+    z.number().int().min(1).max(4)
+  ),
   stylePreset: z.string().trim().max(80).optional(),
   referenceImageUrl: z.string().url().optional(),
   workspaceId: workspaceIdField,

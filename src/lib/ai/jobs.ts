@@ -1,6 +1,6 @@
 import { JobStatus, MediaType, Prisma } from "@prisma/client";
 
-import { getProvider } from "@/lib/ai/providers";
+import { getProvider, resolveProviderForModel } from "@/lib/ai/providers";
 import { calculateCreditCost } from "@/lib/credits/calculator";
 import { deductCredits, refundCredits } from "@/lib/credits/wallet";
 import { prisma } from "@/lib/db/prisma";
@@ -133,7 +133,7 @@ export async function processJob(jobId: string) {
     return job;
   }
 
-  const provider = await getProvider(job.model.provider?.slug);
+  const provider = await resolveProviderForModel(job.model.slug, job.model.provider?.slug);
 
   let providerJobId = job.providerJobId;
 
@@ -231,7 +231,7 @@ export async function cancelJob(jobId: string, userId?: string) {
   }
 
   if (job.providerJobId && job.model.provider?.slug) {
-    const provider = await getProvider(job.model.provider.slug);
+    const provider = await resolveProviderForModel(job.model.slug, job.model.provider.slug);
     await provider.cancel(job.providerJobId);
   }
 

@@ -9,7 +9,8 @@ import type {
   ProviderPollResult,
   ProviderSubmitResult,
 } from "./types";
-import { resolveReplicateModel } from "./model-map";
+import { resolveReplicateModel, LIVE_TEST_IMAGE_URL, type ReplicateModelRef } from "./model-map";
+import { resolutionToPixels } from "@/lib/validation/generation";
 
 const REPLICATE_API = "https://api.replicate.com/v1";
 
@@ -57,29 +58,88 @@ async function replicateFetch(path: string, init?: RequestInit) {
   return res.json();
 }
 
-function buildInput(request: GenerationRequest): Record<string, unknown> {
-  const input: Record<string, unknown> = {
-    prompt: request.prompt ?? "",
-  };
+function buildInput(request: GenerationRequest, modelRef: ReplicateModelRef): Record<string, unknown> {
+  const mode = modelRef.inputMode ?? "text_to_image";
+  const imageUrl =
+    (request.settings.referenceImageUrl as string | undefined) ??
+    (request.settings.referenceImage as string | undefined) ??
+    LIVE_TEST_IMAGE_URL;
 
-  if (request.negativePrompt) {
-    input.negative_prompt = request.negativePrompt;
-  }
+  switch (mode) {
+    case "image_enhance":
+      return {
+        image: imageUrl,
+        scale: Number(request.settings.scale ?? 2),
+      };
+    case "image_to_video":
+      return {
+        image: imageUrl,
+        prompt: request.prompt ?? "gentle cinematic motion",
+      };
+    case "text_to_video":
+      return {
+        prompt: request.prompt ?? "",
+        ...(request.negativePrompt ? { negative_prompt: request.negativePrompt } : {}),
+        num_frames: Number(request.settings.duration ?? 5) * 8,
+        fps: Number(request.settings.fps ?? 8),
+      };
+    case "text_to_audio":
+      return {
+        prompt: request.prompt ?? "ambient electronic music",
+        duration: Number(request.settings.duration ?? 10),
+      };
+    case "text_to_speech":
+      return {
+        text: request.prompt ?? "Hello from VireoMorph live model test.",
+        speaker: "default",
+        language: "en",
+      };
+    case "lip_sync":
+      return {
+        source_image: imageUrl,
+        driven_audio: request.settings.audioUrl ?? "https://replicate.delivery/pbxt/sample-audio.wav",
+        prompt: request.prompt ?? "",
+      };
+    case "text_to_image":
+    default: {
+      const input: Record<string, unknown> = {
+        prompt: request.prompt ?? "",
+      };
+
+      if (request.negativePrompt) {
+        input.negative_prompt = request.negativePrompt;
+      }
 
   if (request.settings.aspectRatio) {
     const [w, h] = String(request.settings.aspectRatio).split(":").map(Number);
     if (w && h) {
-      const base = request.settings.resolution === "1080p" ? 1080 : 768;
+      const base = resolutionToPixels(String(request.settings.resolution ?? "768px"));
       input.width = Math.round((base * w) / h);
       input.height = base;
     }
   }
 
-  if (request.settings.seed) {
-    input.seed = request.settings.seed;
-  }
+      if (request.settings.seed) {
+        input.seed = request.settings.seed;
+      }
 
-  return input;
+      if (modelRef.requiresImage) {
+        input.image = imageUrl;
+      }
+
+      return input;
+    }
+  }
+}
+
+function mimeFromOutputUrl(url: string): string {
+  const lower = url.toLowerCase();
+  if (lower.includes(".mp4") || lower.includes("video")) return "video/mp4";
+  if (lower.includes(".wav")) return "audio/wav";
+  if (lower.includes(".mp3") || lower.includes("audio")) return "audio/mpeg";
+  if (lower.includes(".webp")) return "image/webp";
+  if (lower.includes(".jpg") || lower.includes(".jpeg")) return "image/jpeg";
+  return "image/png";
 }
 
 export class ReplicateProvider implements ProviderAdapter {
@@ -98,13 +158,20 @@ export class ReplicateProvider implements ProviderAdapter {
     const modelPath = `${modelRef.owner}/${modelRef.name}`;
     const prediction = (await replicateFetch(`/models/${modelPath}/predictions`, {
       method: "POST",
-      body: JSON.stringify({ input: buildInput(request) }),
+      body: JSON.stringify({ input: buildInput(request, modelRef) }),
     })) as ReplicatePrediction;
+
+    const estimatedSeconds =
+      modelRef.inputMode === "text_to_video" || modelRef.inputMode === "image_to_video"
+        ? 120
+        : modelRef.inputMode === "text_to_audio" || modelRef.inputMode === "lip_sync"
+          ? 60
+          : 30;
 
     return {
       providerJobId: prediction.id,
       status: mapReplicateStatus(prediction.status),
-      estimatedSeconds: 30,
+      estimatedSeconds,
     };
   }
 
@@ -133,7 +200,7 @@ export class ReplicateProvider implements ProviderAdapter {
 
     const stored = await uploadRemoteUrlToStorage(outputUrl, {
       folder: "generations/replicate",
-      contentType: "image/png",
+      contentType: mimeFromOutputUrl(outputUrl),
     });
 
     return {

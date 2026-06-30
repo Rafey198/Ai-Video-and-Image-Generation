@@ -51,6 +51,19 @@ export const STUDIO_PLAN_LIMITS: Record<StudioPlanTier, PlanLimits> = {
 export async function resolveUserStudioPlan(userId: string): Promise<StudioPlanTier> {
   const { prisma } = await import("@/lib/db/prisma");
 
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true },
+  });
+
+  if (
+    user?.role === "admin" ||
+    user?.role === "super_admin" ||
+    user?.role === "developer"
+  ) {
+    return "business";
+  }
+
   const subscription = await prisma.subscription.findFirst({
     where: { userId, status: "active" },
     include: { plan: true },

@@ -15,6 +15,7 @@ import { ExportDropdown } from "@/components/digital-product/ExportDropdown";
 import { toast } from "@/components/ui/toast";
 import { LOGO_SERVICE_DESCRIPTION, CANVA_HELPER_TEXT } from "@/lib/digital-product/constants";
 import type { LogoConcept } from "@/lib/digital-product/types";
+import { parseApiJson } from "@/lib/utils/parse-api-json";
 
 const STYLES = ["modern", "classic", "luxury", "minimal", "tech", "playful", "corporate"];
 
@@ -64,13 +65,15 @@ export default function LogoGeneratorPage() {
         }),
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      const data = await parseApiJson<{ products: { id: string }[]; error?: string }>(res);
+      if (!res.ok) throw new Error(data.error ?? "Generation failed");
 
       setProductId(data.products[0].id);
 
       const logoRes = await fetch(`/api/digital-product/${data.products[0].id}`);
-      const logoData = await logoRes.json();
+      const logoData = await parseApiJson<{
+        product?: { logoProject?: { conceptsJson?: LogoConcept[] } };
+      }>(logoRes);
       const projectConcepts = logoData.product?.logoProject?.conceptsJson as LogoConcept[];
       setConcepts(projectConcepts ?? []);
       setSelectedIndex(0);

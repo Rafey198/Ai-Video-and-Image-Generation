@@ -31,7 +31,7 @@ type GenerationSettingsPanelProps = {
 };
 
 const ASPECT_RATIOS = ["1:1", "16:9", "9:16", "4:3", "3:4", "21:9"];
-const RESOLUTIONS = ["480p", "720p", "1080p", "1440p", "4k"];
+const RESOLUTIONS = ["480p", "720p", "1080p", "1440p", "4k", "512px", "768px", "1024px", "1536px"];
 
 export function GenerationSettingsPanel({
   category,

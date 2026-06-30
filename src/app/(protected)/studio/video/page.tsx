@@ -12,7 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/components/ui/toast";
-import type { ActiveJob, AiModelOption, GenerationSettings, MediaItem } from "@/lib/types/components";
+import { useJobPoller } from "@/hooks/use-job-poller";
+import type { AiModelOption, GenerationSettings, MediaItem } from "@/lib/types/components";
 
 const VIDEO_MODES = [
   { id: "text-to-video", label: "Text to Video", description: "Generate video from a prompt" },
@@ -33,8 +34,13 @@ export default function VideoStudioPage() {
     fps: 24,
   });
   const [generating, setGenerating] = useState(false);
-  const [activeJob, setActiveJob] = useState<ActiveJob | null>(null);
-  const [result, setResult] = useState<MediaItem | null>(null);
+
+  const { activeJob, result, setResult, startJob, polling } = useJobPoller({
+    maxAttempts: 80,
+    intervalMs: 2500,
+    onComplete: () => toast({ title: "Video ready", description: "Your clip has finished rendering." }),
+    onError: (msg) => toast({ title: "Generation failed", description: msg, variant: "destructive" }),
+  });
 
   async function handleGenerate() {
     if (!prompt.trim() || !modelSlug) {
@@ -43,7 +49,7 @@ export default function VideoStudioPage() {
     }
 
     setGenerating(true);
-    setActiveJob({ id: "pending", status: "queued", progress: 0, type: "video", prompt });
+    setResult(null);
 
     try {
       const res = await fetch("/api/jobs", {
@@ -65,18 +71,20 @@ export default function VideoStudioPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Generation failed");
 
-      setActiveJob({
-        id: data.job.id,
-        status: data.job.status,
-        progress: data.job.progress ?? 10,
-        type: "video",
-        prompt,
-      });
-
-      if (data.media) setResult(data.media);
-      toast({ title: "Video generation started" });
+      if (data.media) {
+        setResult(data.media as MediaItem);
+        toast({ title: "Video ready", description: "Your clip has finished rendering." });
+      } else {
+        startJob({
+          id: data.job.id,
+          status: data.job.status,
+          progress: data.job.progress ?? 10,
+          type: "video",
+          prompt,
+        });
+        toast({ title: "Video generation started", description: "Rendering on Replicate…" });
+      }
     } catch (err) {
-      setActiveJob(null);
       toast({
         title: "Generation failed",
         description: err instanceof Error ? err.message : "Something went wrong",
@@ -86,6 +94,8 @@ export default function VideoStudioPage() {
       setGenerating(false);
     }
   }
+
+  const isBusy = generating || polling;
 
   return (
     <div className="space-y-6">
@@ -125,7 +135,7 @@ export default function VideoStudioPage() {
                 negativePrompt={negativePrompt}
                 onPromptChange={setPrompt}
                 onNegativePromptChange={setNegativePrompt}
-                disabled={generating}
+                disabled={isBusy}
               />
             </CardContent>
           </Card>
@@ -142,23 +152,23 @@ export default function VideoStudioPage() {
             }}
             onDurationChange={setDuration}
             onSettingsChange={setSettings}
-            disabled={generating}
+            disabled={isBusy}
           />
 
           <Button
             className="w-full bg-aurora shadow-neon-sm"
             size="lg"
             onClick={handleGenerate}
-            disabled={generating || !modelSlug}
+            disabled={isBusy || !modelSlug}
           >
-            {generating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+            {isBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
             Generate video
           </Button>
         </div>
 
         <div className="space-y-6">
           <JobProgressCard job={activeJob} />
-          <MediaPreview item={result} loading={generating && !result} emptyMessage="Your video preview will appear here" />
+          <MediaPreview item={result} loading={isBusy && !result} emptyMessage="Your video preview will appear here" />
         </div>
       </div>
     </div>

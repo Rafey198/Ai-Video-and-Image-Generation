@@ -1,6 +1,6 @@
 import { processJob } from "@/lib/ai/jobs";
 import { errorResponse, handleApiError, json } from "@/lib/api/handler";
-import { requireAuth } from "@/lib/auth/session";
+import { requireAuth, isAdminRole } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
 import { generationRateLimit } from "@/lib/security/rate-limit";
 
@@ -21,7 +21,7 @@ export async function GET(_request: Request, context: RouteContext) {
     }
 
     const rateLimit = generationRateLimit(`jobs:poll:${session.user.id}`);
-    if (!rateLimit.success) {
+    if (!rateLimit.success && !isAdminRole(session.user.role)) {
       return errorResponse("Poll rate limit exceeded", 429);
     }
 

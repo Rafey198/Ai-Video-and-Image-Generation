@@ -11,6 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { parseApiJson } from "@/lib/utils/parse-api-json";
 import { toast } from "@/components/ui/toast";
 
 const FORMATS: { format: ExportFormat; label: string }[] = [
@@ -40,7 +41,7 @@ export function ExportDropdown({ productId }: ExportDropdownProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ productId, format }),
       });
-      const data = await res.json();
+      const data = await parseApiJson<{ downloadUrl: string; error?: string }>(res);
       if (!res.ok) throw new Error(data.error);
 
       const link = document.createElement("a");

@@ -42,7 +42,11 @@ export function handleApiError(error: unknown) {
   }
 
   if (error instanceof ZodError) {
-    return errorResponse("Validation failed", 422, {
+    const first = error.errors[0];
+    const message = first
+      ? `${first.path.join(".") || "request"}: ${first.message}`
+      : "Validation failed";
+    return errorResponse(message, 422, {
       issues: error.flatten().fieldErrors,
     });
   }

@@ -12,6 +12,7 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
+    "db:ensure-test-admin": "tsx prisma/ensure-test-admin.ts",
     "db:seed:digital-product": "tsx prisma/seed-digital-product.ts",
     "postinstall": "prisma generate"
   },

@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/components/ui/toast";
 import { useJobPoller } from "@/hooks/use-job-poller";
+import { formatApiError } from "@/lib/utils/format-api-error";
+import { parseApiJson } from "@/lib/utils/parse-api-json";
 import type { AiModelOption, GenerationSettings, MediaItem } from "@/lib/types/components";
 
 export default function ImageStudioPage() {
@@ -57,21 +59,28 @@ export default function ImageStudioPage() {
         }),
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Generation failed");
+      const data = await parseApiJson<{
+        error?: string;
+        issues?: Record<string, string[]>;
+        job?: { id: string; status: string; progress?: number };
+        media?: MediaItem;
+      }>(res);
+      if (!res.ok) throw new Error(formatApiError(data));
 
       if (data.media) {
         setResult(data.media as MediaItem);
         toast({ title: "Generation complete", description: "Your image is ready." });
-      } else {
+      } else if (data.job?.id) {
         startJob({
           id: data.job.id,
-          status: data.job.status,
+          status: data.job.status as "queued" | "processing" | "completed" | "failed",
           progress: data.job.progress ?? 5,
           type: "image",
           prompt,
         });
         toast({ title: "Generation started", description: "Creating your image…" });
+      } else {
+        throw new Error("No job returned from server");
       }
     } catch (err) {
       toast({

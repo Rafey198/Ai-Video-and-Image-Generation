@@ -97,19 +97,41 @@ export const authOptions: NextAuthOptions = {
   providers,
   callbacks: {
     async signIn({ user, account }) {
-      if (account?.provider === "google" && user.email) {
-        const existing = await prisma.user.findUnique({
-          where: { email: user.email.toLowerCase() },
-          select: { suspended: true },
-        });
-        if (existing?.suspended) return false;
+      try {
+        if (account?.provider === "google" && user.email) {
+          const existing = await prisma.user.findUnique({
+            where: { email: user.email.toLowerCase() },
+            select: { suspended: true },
+          });
+          if (existing?.suspended) return false;
+        }
+        return true;
+      } catch (error) {
+        console.error("[auth] signIn callback failed:", error);
+        return false;
       }
-      return true;
     },
     async jwt({ token, user, trigger }) {
       if (user) {
         token.id = user.id;
-        token.role = user.role;
+        if (user.role) {
+          token.role = user.role;
+        }
+      }
+
+      // OAuth sign-in may not include role on the user object — load from DB.
+      if (user?.email && !token.role) {
+        const dbUser = await prisma.user.findUnique({
+          where: { email: user.email.toLowerCase() },
+          select: { id: true, role: true, suspended: true },
+        });
+        if (dbUser) {
+          token.id = dbUser.id;
+          token.role = dbUser.role;
+          if (dbUser.suspended) {
+            throw new Error("Account suspended");
+          }
+        }
       }
 
       if (token.id && (!token.role || trigger === "update")) {

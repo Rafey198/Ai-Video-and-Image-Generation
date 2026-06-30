@@ -11,7 +11,8 @@ import { PromptEditor } from "@/components/studio/PromptEditor";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/components/ui/toast";
-import type { ActiveJob, AiModelOption, GenerationSettings, MediaItem } from "@/lib/types/components";
+import { useJobPoller } from "@/hooks/use-job-poller";
+import type { AiModelOption, GenerationSettings, MediaItem } from "@/lib/types/components";
 
 export default function AudioStudioPage() {
   const [prompt, setPrompt] = useState("");
@@ -20,8 +21,13 @@ export default function AudioStudioPage() {
   const [duration, setDuration] = useState(30);
   const [settings, setSettings] = useState<GenerationSettings>({ stylePreset: "ambient" });
   const [generating, setGenerating] = useState(false);
-  const [activeJob, setActiveJob] = useState<ActiveJob | null>(null);
-  const [result, setResult] = useState<MediaItem | null>(null);
+
+  const { activeJob, result, setResult, startJob, polling } = useJobPoller({
+    maxAttempts: 60,
+    intervalMs: 2500,
+    onComplete: () => toast({ title: "Audio ready", description: "Your track has finished rendering." }),
+    onError: (msg) => toast({ title: "Generation failed", description: msg, variant: "destructive" }),
+  });
 
   async function handleGenerate() {
     if (!prompt.trim() || !modelSlug) {
@@ -30,7 +36,7 @@ export default function AudioStudioPage() {
     }
 
     setGenerating(true);
-    setActiveJob({ id: "pending", status: "queued", progress: 0, type: "audio", prompt });
+    setResult(null);
 
     try {
       const res = await fetch("/api/jobs", {
@@ -48,18 +54,20 @@ export default function AudioStudioPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Generation failed");
 
-      setActiveJob({
-        id: data.job.id,
-        status: data.job.status,
-        progress: data.job.progress ?? 10,
-        type: "audio",
-        prompt,
-      });
-
-      if (data.media) setResult(data.media);
-      toast({ title: "Audio generation started" });
+      if (data.media) {
+        setResult(data.media as MediaItem);
+        toast({ title: "Audio ready", description: "Your track has finished rendering." });
+      } else {
+        startJob({
+          id: data.job.id,
+          status: data.job.status,
+          progress: data.job.progress ?? 10,
+          type: "audio",
+          prompt,
+        });
+        toast({ title: "Audio generation started", description: "Rendering on Replicate…" });
+      }
     } catch (err) {
-      setActiveJob(null);
       toast({
         title: "Generation failed",
         description: err instanceof Error ? err.message : "Something went wrong",
@@ -69,6 +77,8 @@ export default function AudioStudioPage() {
       setGenerating(false);
     }
   }
+
+  const isBusy = generating || polling;
 
   return (
     <div className="space-y-6">
@@ -92,7 +102,7 @@ export default function AudioStudioPage() {
                 prompt={prompt}
                 onPromptChange={setPrompt}
                 showNegative={false}
-                disabled={generating}
+                disabled={isBusy}
               />
             </CardContent>
           </Card>
@@ -109,23 +119,23 @@ export default function AudioStudioPage() {
             }}
             onDurationChange={setDuration}
             onSettingsChange={setSettings}
-            disabled={generating}
+            disabled={isBusy}
           />
 
           <Button
             className="w-full bg-aurora shadow-neon-sm"
             size="lg"
             onClick={handleGenerate}
-            disabled={generating || !modelSlug}
+            disabled={isBusy || !modelSlug}
           >
-            {generating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+            {isBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
             Generate audio
           </Button>
         </div>
 
         <div className="space-y-6">
           <JobProgressCard job={activeJob} />
-          <MediaPreview item={result} loading={generating && !result} emptyMessage="Your audio preview will appear here" />
+          <MediaPreview item={result} loading={isBusy && !result} emptyMessage="Your audio preview will appear here" />
         </div>
       </div>
     </div>

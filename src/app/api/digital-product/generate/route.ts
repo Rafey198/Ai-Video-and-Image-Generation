@@ -9,6 +9,9 @@ import {
   generationInputSchema,
 } from "@/lib/digital-product/service";
 
+export const dynamic = "force-dynamic";
+export const maxDuration = 120;
+
 export async function POST(req: NextRequest) {
   try {
     const session = await requireAuth();

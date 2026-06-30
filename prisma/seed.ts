@@ -1389,6 +1389,16 @@ async function main() {
   );
 
   const creatorPlan = plans.find((p) => p.slug === "creator")!;
+  const enterprisePlan = plans.find((p) => p.slug === "enterprise")!;
+
+  await prisma.subscription.create({
+    data: {
+      userId: admin.id,
+      planId: enterprisePlan.id,
+      status: "active",
+      currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+    },
+  });
 
   await prisma.subscription.create({
     data: {
@@ -1400,7 +1410,7 @@ async function main() {
   });
 
   await prisma.creditWallet.create({
-    data: { userId: admin.id, balance: 99999 },
+    data: { userId: admin.id, balance: 999_999 },
   });
 
   await prisma.creditWallet.create({

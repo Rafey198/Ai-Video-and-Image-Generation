@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { ExportDropdown } from "@/components/digital-product/ExportDropdown";
 import { toast } from "@/components/ui/toast";
 import { SPREADSHEET_TEMPLATES } from "@/lib/digital-product/constants";
+import { parseApiJson } from "@/lib/utils/parse-api-json";
 
 export default function ExcelTemplatePage() {
   const [templateType, setTemplateType] = useState("ultimate_project_manager");
@@ -46,16 +47,19 @@ export default function ExcelTemplatePage() {
         }),
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      const data = await parseApiJson<{ products: { id: string }[]; error?: string }>(res);
+      if (!res.ok) throw new Error(data.error ?? "Generation failed");
 
       setProductId(data.products[0].id);
 
       const detail = await fetch(`/api/digital-product/${data.products[0].id}`);
-      const detailData = await detail.json();
-      setTabCount(detailData.product?.spreadsheet?.tabCount ?? 0);
+      const detailData = await parseApiJson<{
+        product?: { spreadsheet?: { tabCount?: number } };
+      }>(detail);
+      const tabs = detailData.product?.spreadsheet?.tabCount ?? 0;
+      setTabCount(tabs);
 
-      toast({ title: "Spreadsheet generated!", description: `${tabCount || "Multi-tab"} workbook ready.` });
+      toast({ title: "Spreadsheet generated!", description: `${tabs || "Multi-tab"} workbook ready.` });
     } catch (err) {
       toast({
         title: "Generation failed",
