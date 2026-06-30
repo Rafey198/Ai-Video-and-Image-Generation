@@ -4,6 +4,7 @@ export const SITE_CONFIG = {
   description:
     "Premium AI creative studio for generating, animating, remixing, and syncing images, videos, and audio.",
   url: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+  /** Build-time env fallback — server routes should use getDemoMode() for runtime resolution. */
   demoMode: process.env.NEXT_PUBLIC_DEMO_MODE === "true",
 };
 

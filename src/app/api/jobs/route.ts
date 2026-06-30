@@ -4,10 +4,10 @@ import { z } from "zod";
 import { createGenerationJob, processJob } from "@/lib/ai/jobs";
 import { errorResponse, handleApiError, json } from "@/lib/api/handler";
 import { requireAuth } from "@/lib/auth/session";
+import { getDemoMode } from "@/lib/config/runtime";
 import { prisma } from "@/lib/db/prisma";
 import { enqueueJob } from "@/lib/queue";
 import { generationRateLimit } from "@/lib/security/rate-limit";
-import { SITE_CONFIG } from "@/config/site";
 import {
   audioGenerationSchema,
   imageGenerationSchema,
@@ -118,7 +118,9 @@ export async function POST(request: Request) {
     let processedJob = job;
     let mediaAssets: unknown[] = [];
 
-    if (SITE_CONFIG.demoMode) {
+    const demoMode = await getDemoMode();
+
+    if (demoMode) {
       processedJob = await processJob(job.id);
       mediaAssets = await prisma.mediaAsset.findMany({
         where: { jobId: job.id },

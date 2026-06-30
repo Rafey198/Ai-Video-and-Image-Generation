@@ -14,6 +14,7 @@ type DashboardShellProps = {
   user?: DashboardUser | null;
   credits?: CreditInfo;
   notifications?: NotificationItem[];
+  demoMode?: boolean;
   onSearch?: (query: string) => void;
   onSignOut?: () => void;
   onMarkNotificationRead?: (id: string) => void;
@@ -26,6 +27,7 @@ export function DashboardShell({
   user,
   credits,
   notifications,
+  demoMode,
   onSearch,
   onSignOut,
   onMarkNotificationRead,
@@ -81,6 +83,7 @@ export function DashboardShell({
           user={user}
           credits={credits}
           notifications={notifications}
+          demoMode={demoMode}
           onSearch={onSearch}
           onSignOut={onSignOut}
           onMarkNotificationRead={onMarkNotificationRead}

@@ -1,7 +1,6 @@
 import { JobStatus, MediaType } from "@prisma/client";
 import { randomUUID } from "crypto";
 
-import { SITE_CONFIG } from "@/config/site";
 import type {
   GenerationOutput,
   GenerationRequest,
@@ -46,7 +45,7 @@ function buildOutputs(request: GenerationRequest): GenerationOutput[] {
       request.type.includes("video") || request.type.includes("audio")
         ? Number(request.settings.duration ?? 5)
         : undefined,
-    metadata: { mock: true, provider: "mock", demo: SITE_CONFIG.demoMode },
+    metadata: { mock: true, provider: "mock", demo: true },
   }));
 }
 

@@ -1,5 +1,6 @@
 import type { ProviderAdapter } from "@/lib/ai/providers/types";
-import { isDemoMode, isReplicateConfigured } from "@/lib/config/env";
+import { isReplicateConfigured } from "@/lib/config/env";
+import { getDemoMode } from "@/lib/config/runtime";
 import { comfyUIProvider } from "@/lib/ai/providers/comfyui";
 import { customWorkerProvider } from "@/lib/ai/providers/custom-worker";
 import { huggingFaceProvider } from "@/lib/ai/providers/huggingface";
@@ -18,12 +19,13 @@ export function registerProvider(provider: ProviderAdapter): void {
   providers.set(provider.slug, provider);
 }
 
-export function getProvider(slug?: string | null): ProviderAdapter {
+export async function getProvider(slug?: string | null): Promise<ProviderAdapter> {
+  const demoMode = await getDemoMode();
   const resolved = slug ?? process.env.DEFAULT_AI_PROVIDER ?? "mock";
   const provider = providers.get(resolved);
 
   if (!provider) {
-    if (isDemoMode()) {
+    if (demoMode) {
       console.warn(`[providers] "${resolved}" not registered — falling back to mock (demo mode)`);
       return mockProvider;
     }
@@ -31,11 +33,11 @@ export function getProvider(slug?: string | null): ProviderAdapter {
   }
 
   if (resolved === "replicate" && !isReplicateConfigured()) {
-    if (isDemoMode()) return mockProvider;
+    if (demoMode) return mockProvider;
     throw new Error("Replicate provider is not configured (missing REPLICATE_API_TOKEN)");
   }
 
-  if (resolved === "mock" && !isDemoMode()) {
+  if (resolved === "mock" && !demoMode) {
     console.warn("[providers] Using mock provider in production — assign a real provider to models");
   }
 

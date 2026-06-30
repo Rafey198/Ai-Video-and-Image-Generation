@@ -41,5 +41,3 @@ export function getInitials(name: string): string {
 
 export const APP_NAME = "VireoMorph";
 export const APP_TAGLINE = "Generate. Animate. Remix. Sync.";
-
-export const isDemoMode = () => process.env.NEXT_PUBLIC_DEMO_MODE === "true";

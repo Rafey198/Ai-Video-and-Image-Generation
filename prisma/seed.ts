@@ -16,6 +16,19 @@ const ADMIN_PASSWORD = "Admin123!";
 const DEMO_EMAIL = "demo@vireomorph.dev";
 const DEMO_PASSWORD = "Demo123!";
 
+async function ensureDemoModeFlag() {
+  await prisma.featureFlag.upsert({
+    where: { key: "demo_mode" },
+    create: {
+      key: "demo_mode",
+      name: "Demo Mode",
+      description: "Use mock providers and placeholder outputs",
+      enabled: process.env.NEXT_PUBLIC_DEMO_MODE === "true",
+    },
+    update: {},
+  });
+}
+
 type ModelSeed = {
   slug: string;
   name: string;
@@ -1413,7 +1426,7 @@ async function main() {
   );
 
   const featureFlags = [
-    { key: "demo_mode", name: "Demo Mode", description: "Use mock providers and placeholder outputs", enabled: true },
+    { key: "demo_mode", name: "Demo Mode", description: "Use mock providers and placeholder outputs", enabled: process.env.NEXT_PUBLIC_DEMO_MODE === "true" },
     { key: "video_generation", name: "Video Generation", description: "Enable video studio and video models", enabled: true },
     { key: "audio_generation", name: "Audio Generation", description: "Enable audio studio and music models", enabled: true },
     { key: "sync_studio", name: "Sync Studio", description: "Enable lip-sync and AV sync workflows", enabled: true },
@@ -1711,6 +1724,8 @@ async function main() {
 
   const { seedDigitalProductData } = await import("./seed-digital-product");
   await seedDigitalProductData(prisma);
+
+  await ensureDemoModeFlag();
 
   console.log(`✅ Seeded ${MODELS.length} AI models across ${PROVIDERS.length} providers`);
   console.log(`✅ Admin: ${ADMIN_EMAIL} / ${ADMIN_PASSWORD}`);

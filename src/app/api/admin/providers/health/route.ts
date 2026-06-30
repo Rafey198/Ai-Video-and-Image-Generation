@@ -5,8 +5,8 @@ import { checkReplicateHealth } from "@/lib/ai/providers/replicate";
 import { checkOpenAiHealth } from "@/lib/ai/openai";
 import { handleApiError, json } from "@/lib/api/handler";
 import { requireAdmin } from "@/lib/auth/session";
+import { getDemoMode } from "@/lib/config/runtime";
 import {
-  isDemoMode,
   isGoogleOAuthConfigured,
   isRedisConfigured,
   isStripeConfigured,
@@ -32,10 +32,11 @@ export async function GET() {
       ]);
 
     const queue = getQueueStatus();
+    const demoMode = await getDemoMode();
 
     return json({
       checkedAt: new Date().toISOString(),
-      demoMode: isDemoMode(),
+      demoMode,
       services: {
         neon: database,
         r2: storage,

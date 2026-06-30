@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { LogOut, Search, Settings, User } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,6 +24,7 @@ type TopbarProps = {
   user?: DashboardUser | null;
   credits?: CreditInfo;
   notifications?: NotificationItem[];
+  demoMode?: boolean;
   onSearch?: (query: string) => void;
   onSignOut?: () => void;
   onMarkNotificationRead?: (id: string) => void;
@@ -33,6 +35,7 @@ export function Topbar({
   user,
   credits,
   notifications = [],
+  demoMode = false,
   onSearch,
   onSignOut,
   onMarkNotificationRead,
@@ -60,6 +63,12 @@ export function Topbar({
       </form>
 
       <div className="flex items-center gap-2">
+        {demoMode && (
+          <Badge variant="secondary" className="hidden border-amber-500/30 bg-amber-500/10 text-amber-400 sm:inline-flex">
+            Demo Mode
+          </Badge>
+        )}
+
         {credits && <CreditBadge balance={credits.balance} />}
 
         <NotificationBell

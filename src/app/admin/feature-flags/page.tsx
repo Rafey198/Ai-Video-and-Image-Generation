@@ -22,11 +22,17 @@ export default function AdminFeatureFlagsPage() {
   }, []);
 
   async function handleToggle(key: string, enabled: boolean) {
-    await fetch("/api/admin/feature-flags", {
+    const res = await fetch("/api/admin/feature-flags", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ key, enabled }),
+      body: JSON.stringify({ flags: [{ key, enabled }] }),
     });
+
+    if (!res.ok) {
+      loadFlags();
+      return;
+    }
+
     setFlags((f) => f.map((flag) => (flag.key === key ? { ...flag, enabled } : flag)));
   }
 

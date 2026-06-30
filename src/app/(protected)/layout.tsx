@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { DashboardLayoutClient } from "@/components/dashboard/DashboardLayoutClient";
 import { getSession } from "@/lib/auth/session";
+import { getDemoMode } from "@/lib/config/runtime";
 import { prisma } from "@/lib/db/prisma";
 import { isDatabaseConfigured, safeDbQuery } from "@/lib/db/safe-query";
 
@@ -23,7 +24,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
     }
   }
 
-  const [wallet, notifications] = await Promise.all([
+  const [wallet, notifications, demoMode] = await Promise.all([
     safeDbQuery(
       () => prisma.creditWallet.findUnique({ where: { userId: session.user.id } }),
       null
@@ -37,6 +38,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
         }),
       []
     ),
+    getDemoMode(),
   ]);
 
   return (
@@ -52,6 +54,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
         link: n.link,
         createdAt: n.createdAt,
       }))}
+      demoMode={demoMode}
     >
       {children}
     </DashboardLayoutClient>

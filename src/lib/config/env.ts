@@ -5,6 +5,7 @@ export function isEnvSet(key: string): boolean {
   return Boolean(value && value.trim().length > 0);
 }
 
+/** @deprecated Prefer {@link getDemoMode} from `@/lib/config/runtime` on the server. */
 export function isDemoMode(): boolean {
   return process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 }

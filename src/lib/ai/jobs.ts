@@ -133,7 +133,7 @@ export async function processJob(jobId: string) {
     return job;
   }
 
-  const provider = getProvider(job.model.provider?.slug);
+  const provider = await getProvider(job.model.provider?.slug);
 
   let providerJobId = job.providerJobId;
 
@@ -231,7 +231,7 @@ export async function cancelJob(jobId: string, userId?: string) {
   }
 
   if (job.providerJobId && job.model.provider?.slug) {
-    const provider = getProvider(job.model.provider.slug);
+    const provider = await getProvider(job.model.provider.slug);
     await provider.cancel(job.providerJobId);
   }
 

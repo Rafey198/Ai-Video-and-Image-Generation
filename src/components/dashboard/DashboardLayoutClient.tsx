@@ -10,6 +10,7 @@ type DashboardLayoutClientProps = {
   user: DashboardUser;
   credits: CreditInfo;
   notifications: NotificationItem[];
+  demoMode?: boolean;
 };
 
 export function DashboardLayoutClient({
@@ -17,12 +18,14 @@ export function DashboardLayoutClient({
   user,
   credits,
   notifications,
+  demoMode,
 }: DashboardLayoutClientProps) {
   return (
     <DashboardShell
       user={user}
       credits={credits}
       notifications={notifications}
+      demoMode={demoMode}
       onSignOut={() => signOut({ callbackUrl: "/login" })}
     >
       {children}

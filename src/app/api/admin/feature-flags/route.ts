@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { handleApiError, json } from "@/lib/api/handler";
 import { requireAdmin } from "@/lib/auth/session";
+import { DEMO_MODE_FLAG_KEY, invalidateDemoModeCache } from "@/lib/config/runtime";
 import { prisma } from "@/lib/db/prisma";
 
 const updateFlagsSchema = z.object({
@@ -65,6 +66,10 @@ export async function PATCH(request: Request) {
         details: { keys: flags.map((f) => f.key) },
       },
     });
+
+    if (flags.some((f) => f.key === DEMO_MODE_FLAG_KEY)) {
+      invalidateDemoModeCache();
+    }
 
     return json({ flags: updated });
   } catch (error) {

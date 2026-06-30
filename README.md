@@ -143,12 +143,23 @@ Open [http://localhost:3000](http://localhost:3000)
 
 ## Demo Mode
 
-Set `NEXT_PUBLIC_DEMO_MODE=true` to enable full product experience without real AI providers:
+Demo mode can be controlled in two ways (database wins when the flag exists):
+
+1. **Environment variable** — `NEXT_PUBLIC_DEMO_MODE=true` (default fallback for new deploys)
+2. **Admin toggle** — `/admin/feature-flags` → **Demo Mode** (persists in DB, no redeploy needed)
+
+The server resolves demo mode via `getDemoMode()`: FeatureFlag `demo_mode` overrides env. The public API `GET /api/config/public` returns `{ demoMode: boolean }` for client UI. New users inherit the current global setting.
+
+When demo mode is **ON**:
 
 - Generation forms work end-to-end
-- Jobs are created and processed with simulated delays
+- Jobs are processed instantly with mock providers and placeholder media
 - Credits are deducted and refunded correctly
-- Placeholder media appears in gallery/history
+
+When demo mode is **OFF**:
+
+- Real providers (Replicate, Hugging Face, etc.) are used per model registry
+- Jobs are enqueued for async processing (Redis when configured)
 
 ## AI Provider Integration
 
@@ -262,8 +273,8 @@ STORAGE_PROVIDER=s3
 - [ ] Set up S3/R2 storage (required for persistent uploads on Vercel)
 - [ ] Configure Stripe keys (if billing enabled)
 - [ ] Set `WEBHOOK_SECRET` for job webhooks in production
-- [ ] Set `NEXT_PUBLIC_DEMO_MODE=false` when enabling real AI providers
-- [ ] Verify model licenses before enabling real providers
+- [ ] Toggle **Demo Mode** at `/admin/feature-flags` or set `NEXT_PUBLIC_DEMO_MODE` for initial deploy
+- [ ] Verify model licenses before disabling demo mode
 - [ ] Run trademark/domain legal review
 
 ## Security Notes
