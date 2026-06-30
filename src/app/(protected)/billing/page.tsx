@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, CreditCard, Zap } from "lucide-react";
+import { AlertCircle, Check, CreditCard, Zap } from "lucide-react";
 
 import { PricingCards, type PricingTier } from "@/components/marketing/PricingCards";
 import { Badge } from "@/components/ui/badge";
@@ -58,15 +58,18 @@ export default function BillingPage() {
   const [monthlyUsed, setMonthlyUsed] = useState(0);
   const [monthlyLimit, setMonthlyLimit] = useState(2000);
   const [plan, setPlan] = useState("Free");
+  const [paymentsConfigured, setPaymentsConfigured] = useState(true);
 
   useEffect(() => {
-    fetch("/api/credits")
-      .then((r) => r.json())
-      .then((data) => {
-        setBalance(data.balance ?? data.wallet?.balance ?? 0);
-        setMonthlyUsed(data.monthlyUsed ?? 0);
-        setMonthlyLimit(data.monthlyLimit ?? 2000);
-        setPlan(data.plan ?? "Free");
+    Promise.all([fetch("/api/credits"), fetch("/api/billing/status")])
+      .then(async ([creditsRes, billingRes]) => {
+        const creditsData = await creditsRes.json();
+        const billingData = await billingRes.json();
+        setBalance(creditsData.balance ?? creditsData.wallet?.balance ?? 0);
+        setMonthlyUsed(creditsData.monthlyUsed ?? 0);
+        setMonthlyLimit(creditsData.monthlyLimit ?? 2000);
+        setPlan(creditsData.plan ?? "Free");
+        setPaymentsConfigured(billingData.paymentsConfigured ?? false);
       })
       .catch(() => {});
   }, []);
@@ -79,6 +82,21 @@ export default function BillingPage() {
         <h1 className="text-2xl font-bold tracking-tight">Billing & Credits</h1>
         <p className="text-muted-foreground">Manage your plan, credits, and usage</p>
       </div>
+
+      {!paymentsConfigured && (
+        <Card className="border-amber-500/40 bg-amber-500/10">
+          <CardContent className="flex gap-3 pt-6">
+            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" />
+            <div>
+              <p className="font-medium text-amber-200">Payments not configured yet</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Credit purchases and subscription upgrades are unavailable until Stripe is configured.
+                Your existing credits can still be used for generation.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-3">
         <Card className="border-border/60 bg-card/50">
@@ -132,9 +150,13 @@ export default function BillingPage() {
                 <CardDescription>${pack.price} one-time</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button className="w-full" variant={pack.popular ? "default" : "outline"}>
+                <Button
+                  className="w-full"
+                  variant={pack.popular ? "default" : "outline"}
+                  disabled={!paymentsConfigured}
+                >
                   <CreditCard className="mr-2 h-4 w-4" />
-                  Purchase
+                  {paymentsConfigured ? "Purchase" : "Unavailable"}
                 </Button>
               </CardContent>
             </Card>
@@ -144,7 +166,15 @@ export default function BillingPage() {
 
       <div>
         <h2 className="mb-4 text-lg font-semibold">Subscription plans</h2>
-        <PricingCards tiers={PLAN_TIERS} title="" subtitle="" />
+        <PricingCards
+          tiers={PLAN_TIERS.map((tier) => ({
+            ...tier,
+            ctaLabel: paymentsConfigured ? tier.ctaLabel : "Unavailable",
+            ctaHref: paymentsConfigured ? tier.ctaHref : "#",
+          }))}
+          title=""
+          subtitle=""
+        />
       </div>
 
       <Card className="border-border/60 bg-card/50">
@@ -157,7 +187,7 @@ export default function BillingPage() {
         <CardContent className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
           <p>✓ Credits never expire on paid plans</p>
           <p>✓ Unused subscription credits roll over</p>
-          <p>✓ Secure payment via Stripe</p>
+          <p>{paymentsConfigured ? "✓ Secure payment via Stripe" : "○ Stripe checkout coming soon"}</p>
           <p>✓ Cancel anytime</p>
         </CardContent>
       </Card>

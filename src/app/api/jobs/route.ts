@@ -5,6 +5,7 @@ import { createGenerationJob, processJob } from "@/lib/ai/jobs";
 import { errorResponse, handleApiError, json } from "@/lib/api/handler";
 import { requireAuth } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
+import { enqueueJob } from "@/lib/queue";
 import { generationRateLimit } from "@/lib/security/rate-limit";
 import { SITE_CONFIG } from "@/config/site";
 import {
@@ -132,6 +133,8 @@ export async function POST(request: Request) {
           duration: true,
         },
       });
+    } else {
+      await enqueueJob({ jobId: job.id, type });
     }
 
     return json({ job: processedJob, media: mediaAssets[0] ?? null, mediaAssets }, 201);

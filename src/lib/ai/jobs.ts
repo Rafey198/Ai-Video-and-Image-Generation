@@ -135,7 +135,9 @@ export async function processJob(jobId: string) {
 
   const provider = getProvider(job.model.provider?.slug);
 
-  if (!job.providerJobId) {
+  let providerJobId = job.providerJobId;
+
+  if (!providerJobId) {
     const submitted = await provider.submit({
       jobId: job.id,
       type: job.type,
@@ -146,10 +148,12 @@ export async function processJob(jobId: string) {
       providerSlug: job.model.provider?.slug,
     });
 
+    providerJobId = submitted.providerJobId;
+
     await prisma.generationJob.update({
       where: { id: job.id },
       data: {
-        providerJobId: submitted.providerJobId,
+        providerJobId,
         status: provider.mapStatus(submitted.status),
         startedAt: new Date(),
         progress: submitted.status === "processing" ? 10 : 0,
@@ -157,7 +161,7 @@ export async function processJob(jobId: string) {
     });
   }
 
-  const pollResult = await provider.poll(job.providerJobId!);
+  const pollResult = await provider.poll(providerJobId);
   const status = provider.mapStatus(pollResult.status);
 
   const updatedJob = await prisma.generationJob.update({

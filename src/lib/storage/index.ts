@@ -2,6 +2,8 @@ import { randomUUID } from "crypto";
 import { mkdir, writeFile, unlink, readFile } from "fs/promises";
 import path from "path";
 
+import { isS3Configured } from "@/lib/config/env";
+import { S3StorageProvider } from "./s3";
 import { sanitizeFilename } from "./signed-url";
 
 export interface StorageUploadOptions {
@@ -34,7 +36,6 @@ export class LocalStorageProvider implements StorageProvider {
     const rawName = options?.filename ?? `${randomUUID()}${ext}`;
     const filename = options?.filename ? sanitizeFilename(rawName) : rawName;
     const resolved = path.posix.join(folder, filename);
-    // Prevent path traversal
     if (resolved.includes("..")) {
       throw new Error("Invalid storage path");
     }
@@ -52,12 +53,7 @@ export class LocalStorageProvider implements StorageProvider {
       "audio/mpeg": ".mp3",
       "audio/wav": ".wav",
       "application/pdf": ".pdf",
-      "application/vnd.openxmlformats-officedocument.presentationml.presentation": ".pptx",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ".xlsx",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
-      "application/zip": ".zip",
       "image/svg+xml": ".svg",
-      "application/json": ".json",
     };
     return map[mime] ?? "";
   }
@@ -100,45 +96,6 @@ export class LocalStorageProvider implements StorageProvider {
   }
 }
 
-export class S3StorageProvider implements StorageProvider {
-  constructor(
-    private readonly config: {
-      endpoint?: string;
-      bucket: string;
-      region?: string;
-      publicUrl?: string;
-    }
-  ) {}
-
-  async upload(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    _buffer: Buffer,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    _options?: StorageUploadOptions
-  ): Promise<{ url: string; key: string }> {
-    throw new Error(
-      "S3StorageProvider is not yet implemented. Configure STORAGE_PROVIDER=local or implement S3 upload."
-    );
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async delete(_key: string): Promise<void> {
-    throw new Error("S3StorageProvider delete is not yet implemented.");
-  }
-
-  getPublicUrl(key: string): string {
-    const base =
-      this.config.publicUrl ??
-      `https://${this.config.bucket}.s3.${this.config.region ?? "us-east-1"}.amazonaws.com`;
-    return `${base.replace(/\/$/, "")}/${key.replace(/^\//, "")}`;
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async exists(_key: string): Promise<boolean> {
-    throw new Error("S3StorageProvider exists check is not yet implemented.");
-  }
-}
-
 let cachedProvider: StorageProvider | null = null;
 
 export function getStorageProvider(): StorageProvider {
@@ -149,20 +106,15 @@ export function getStorageProvider(): StorageProvider {
   const provider = process.env.STORAGE_PROVIDER ?? "local";
 
   if (provider === "s3") {
-    const bucket = process.env.S3_BUCKET;
-    if (!bucket) {
-      throw new Error("S3_BUCKET is required when STORAGE_PROVIDER=s3");
+    if (!isS3Configured()) {
+      throw new Error("S3 storage selected but required S3_* environment variables are missing");
     }
-
-    cachedProvider = new S3StorageProvider({
-      endpoint: process.env.S3_ENDPOINT,
-      bucket,
-      region: process.env.S3_REGION,
-      publicUrl: process.env.S3_PUBLIC_URL,
-    });
+    cachedProvider = new S3StorageProvider();
     return cachedProvider;
   }
 
   cachedProvider = new LocalStorageProvider();
   return cachedProvider;
 }
+
+export { S3StorageProvider } from "./s3";
