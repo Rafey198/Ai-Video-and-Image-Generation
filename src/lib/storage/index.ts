@@ -2,6 +2,8 @@ import { randomUUID } from "crypto";
 import { mkdir, writeFile, unlink, readFile } from "fs/promises";
 import path from "path";
 
+import { sanitizeFilename } from "./signed-url";
+
 export interface StorageUploadOptions {
   contentType?: string;
   folder?: string;
@@ -29,8 +31,14 @@ export class LocalStorageProvider implements StorageProvider {
     const ext = options?.contentType
       ? this.extensionFromMime(options.contentType)
       : "";
-    const filename = options?.filename ?? `${randomUUID()}${ext}`;
-    return path.posix.join(folder, filename);
+    const rawName = options?.filename ?? `${randomUUID()}${ext}`;
+    const filename = options?.filename ? sanitizeFilename(rawName) : rawName;
+    const resolved = path.posix.join(folder, filename);
+    // Prevent path traversal
+    if (resolved.includes("..")) {
+      throw new Error("Invalid storage path");
+    }
+    return resolved;
   }
 
   private extensionFromMime(mime: string): string {

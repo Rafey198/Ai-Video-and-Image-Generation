@@ -54,7 +54,8 @@ export function Topbar({
         <Input
           name="q"
           placeholder="Search projects, prompts, media..."
-          className="border-border/60 bg-background/50 pl-9"
+          className="hidden border-border/60 bg-background/50 pl-9 sm:block"
+          aria-label="Search dashboard"
         />
       </form>
 
@@ -90,7 +91,7 @@ export function Topbar({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link href="/settings/profile">
+              <Link href="/settings">
                 <User className="mr-2 h-4 w-4" />
                 Profile
               </Link>

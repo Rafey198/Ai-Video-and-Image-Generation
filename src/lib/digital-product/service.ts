@@ -14,7 +14,7 @@ import {
   regeneratePartial,
 } from "./ai-generator";
 import { fetchRandomSeedBundle } from "./seed-data";
-import { buildWorkbookBuffer, getSheetNamesForTemplate } from "./spreadsheet/builder";
+import { getSheetNamesForTemplate } from "./spreadsheet/builder";
 import { checkTrademarkPrompt } from "./security/trademark-check";
 import { sanitizeSvg } from "./security/svg-sanitize";
 import { exportDigitalProduct } from "./export";

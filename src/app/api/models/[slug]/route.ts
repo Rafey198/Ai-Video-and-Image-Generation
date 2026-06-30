@@ -30,7 +30,7 @@ export async function GET(request: Request, context: RouteContext) {
       },
     });
 
-    if (!model) {
+    if (!model || !model.enabled) {
       return errorResponse("Model not found", 404);
     }
 

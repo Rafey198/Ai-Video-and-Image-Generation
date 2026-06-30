@@ -43,7 +43,7 @@ export default function PricingPage() {
       </div>
 
       <CTASection
-        primaryHref="/register"
+        primaryHref="/signup"
         secondaryHref="/enterprise"
         secondaryLabel="Talk to sales"
       />

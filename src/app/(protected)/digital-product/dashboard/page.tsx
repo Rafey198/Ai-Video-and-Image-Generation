@@ -6,7 +6,7 @@ import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ExportDropdown } from "@/components/digital-product/ExportDropdown";
@@ -50,7 +50,8 @@ export default function DigitalProductDashboardPage() {
   }
 
   useEffect(() => {
-    loadDashboard();
+    void loadDashboard();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- initial load only
   }, []);
 
   async function toggleFavorite(id: string, favorite: boolean) {

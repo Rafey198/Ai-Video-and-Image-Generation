@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { DashboardLayoutClient } from "@/components/dashboard/DashboardLayoutClient";
 import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
-import { safeDbQuery } from "@/lib/db/safe-query";
+import { isDatabaseConfigured, safeDbQuery } from "@/lib/db/safe-query";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +11,16 @@ export default async function ProtectedLayout({ children }: { children: React.Re
   const session = await getSession();
   if (!session) {
     redirect("/login");
+  }
+
+  if (isDatabaseConfigured()) {
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { suspended: true },
+    });
+    if (user?.suspended) {
+      redirect("/login?error=AccountSuspended");
+    }
   }
 
   const [wallet, notifications] = await Promise.all([

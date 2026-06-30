@@ -1,11 +1,12 @@
 import { JobStatus } from "@prisma/client";
 import { z } from "zod";
 
-import { createGenerationJob } from "@/lib/ai/jobs";
+import { createGenerationJob, processJob } from "@/lib/ai/jobs";
 import { errorResponse, handleApiError, json } from "@/lib/api/handler";
 import { requireAuth } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
 import { generationRateLimit } from "@/lib/security/rate-limit";
+import { SITE_CONFIG } from "@/config/site";
 import {
   audioGenerationSchema,
   imageGenerationSchema,
@@ -112,7 +113,28 @@ export async function POST(request: Request) {
       settings,
     });
 
-    return json({ job }, 201);
+    // In demo mode, process immediately so serverless instances complete jobs
+    let processedJob = job;
+    let mediaAssets: unknown[] = [];
+
+    if (SITE_CONFIG.demoMode) {
+      processedJob = await processJob(job.id);
+      mediaAssets = await prisma.mediaAsset.findMany({
+        where: { jobId: job.id },
+        select: {
+          id: true,
+          type: true,
+          url: true,
+          thumbnailUrl: true,
+          mimeType: true,
+          width: true,
+          height: true,
+          duration: true,
+        },
+      });
+    }
+
+    return json({ job: processedJob, media: mediaAssets[0] ?? null, mediaAssets }, 201);
   } catch (error) {
     return handleApiError(error);
   }

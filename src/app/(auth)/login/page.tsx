@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/toast";
+import { getSafeCallbackUrl } from "@/lib/utils/safe-redirect";
 
 function LoginForm() {
   const router = useRouter();
@@ -20,7 +21,7 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
+  const callbackUrl = getSafeCallbackUrl(searchParams.get("callbackUrl"));
   const error = searchParams.get("error");
 
   async function handleSubmit(e: React.FormEvent) {

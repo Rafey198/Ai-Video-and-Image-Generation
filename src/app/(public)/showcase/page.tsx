@@ -24,7 +24,7 @@ export default function ShowcasePage() {
       <CTASection
         title="Share your work"
         subtitle="Publish to the showcase from your gallery—or keep projects private until launch day."
-        primaryHref="/register"
+        primaryHref="/signup"
         secondaryLabel="Learn more"
         secondaryHref="/features"
       />

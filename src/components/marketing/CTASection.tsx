@@ -20,7 +20,7 @@ export function CTASection({
   title = `Ready to create with ${SITE_CONFIG.name}?`,
   subtitle = "Join thousands of creators generating stunning AI content. Start with free credits today.",
   primaryLabel = "Start for free",
-  primaryHref = "/register",
+  primaryHref = "/signup",
   secondaryLabel = "Talk to sales",
   secondaryHref = "/enterprise",
 }: CTASectionProps) {

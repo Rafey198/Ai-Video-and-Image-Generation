@@ -18,7 +18,7 @@ export const PRICING_TIERS: PricingTier[] = [
       "Standard queue priority",
     ],
     ctaLabel: "Start free",
-    ctaHref: "/register",
+    ctaHref: "/signup",
   },
   {
     id: "creator",
@@ -75,6 +75,7 @@ export const PRICING_TIERS: PricingTier[] = [
     price: 0,
     interval: "month",
     credits: 0,
+    priceLabel: "Custom",
     features: [
       "Unlimited seats",
       "Private model endpoints",
@@ -319,7 +320,7 @@ Shared workspaces, role-based access, and audit-ready infrastructure mean creati
 
 We route to the best model for each task—FLUX for stills, Wan for motion, Stable Audio for soundscapes—so you always get optimal quality without managing provider APIs yourself.
 
-Ready to create? [Start with free credits](/register).`,
+Ready to create? [Start with free credits](/signup).`,
   },
   {
     slug: "choosing-the-right-video-model",

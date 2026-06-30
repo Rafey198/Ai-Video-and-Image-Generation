@@ -23,7 +23,7 @@ export default function ModelsPage() {
       <CTASection
         title="Ready to generate?"
         subtitle="Pick a model in the studio and start creating with your free credits."
-        primaryHref="/register"
+        primaryHref="/signup"
         secondaryHref="/pricing"
         secondaryLabel="View pricing"
       />

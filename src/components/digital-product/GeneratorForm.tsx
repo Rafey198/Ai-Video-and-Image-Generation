@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, Sparkles, Download, RefreshCw } from "lucide-react";
+import { Loader2, Sparkles, RefreshCw } from "lucide-react";
 import { DigitalProductType, ExportFormat, GenerationDataMode } from "@prisma/client";
 
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "@/components/ui/toast";
 import { TemplatePreview } from "@/components/digital-product/TemplatePreview";
 import { ExportDropdown } from "@/components/digital-product/ExportDropdown";

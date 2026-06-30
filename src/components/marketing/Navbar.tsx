@@ -40,7 +40,7 @@ export function Navbar() {
             <Link href="/login">Sign in</Link>
           </Button>
           <Button variant="gradient" asChild>
-            <Link href="/register">Get started</Link>
+            <Link href="/signup">Get started</Link>
           </Button>
         </div>
 
@@ -88,7 +88,7 @@ export function Navbar() {
                   </Link>
                 </Button>
                 <Button variant="gradient" asChild className="w-full">
-                  <Link href="/register" onClick={() => setMobileOpen(false)}>
+                  <Link href="/signup" onClick={() => setMobileOpen(false)}>
                     Get started
                   </Link>
                 </Button>

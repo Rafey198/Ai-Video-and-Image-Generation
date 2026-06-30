@@ -27,6 +27,8 @@ export interface PricingTier {
   highlighted?: boolean;
   ctaLabel?: string;
   ctaHref?: string;
+  /** When set, replaces numeric price display (e.g. "Custom") */
+  priceLabel?: string;
 }
 
 interface PricingCardsProps {
@@ -80,12 +82,20 @@ export function PricingCards({
                   <CardTitle>{tier.name}</CardTitle>
                   <CardDescription>{tier.description}</CardDescription>
                   <div className="mt-4">
-                    <span className="text-4xl font-bold">${tier.price}</span>
-                    <span className="text-muted-foreground">/{tier.interval}</span>
+                    {tier.priceLabel ? (
+                      <span className="text-4xl font-bold">{tier.priceLabel}</span>
+                    ) : (
+                      <>
+                        <span className="text-4xl font-bold">${tier.price}</span>
+                        <span className="text-muted-foreground">/{tier.interval}</span>
+                      </>
+                    )}
                   </div>
-                  <p className="text-sm text-cyan-aurora">
-                    {tier.credits.toLocaleString()} credits included
-                  </p>
+                  {tier.credits > 0 && (
+                    <p className="text-sm text-cyan-aurora">
+                      {tier.credits.toLocaleString()} credits included
+                    </p>
+                  )}
                 </CardHeader>
                 <CardContent className="flex-1">
                   <ul className="space-y-3">
@@ -103,7 +113,7 @@ export function PricingCards({
                     className="w-full"
                     asChild
                   >
-                    <Link href={tier.ctaHref ?? "/register"}>
+                    <Link href={tier.ctaHref ?? "/signup"}>
                       {tier.ctaLabel ?? "Get started"}
                     </Link>
                   </Button>

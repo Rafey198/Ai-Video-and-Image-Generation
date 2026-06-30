@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { EmptyState } from "@/components/ui/empty-state";
 import { cn } from "@/lib/utils";
 import type { JobSummary } from "@/lib/types/components";
 
@@ -47,7 +48,13 @@ export function RecentJobs({ jobs, viewAllHref = "/history" }: RecentJobsProps) 
       </CardHeader>
       <CardContent>
         {jobs.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">No jobs yet</p>
+          <EmptyState
+            icon={Image}
+            title="No generations yet"
+            description="Start in Image Studio or Video Studio to see your jobs here."
+            actionLabel="Open Image Studio"
+            actionHref="/studio/image"
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

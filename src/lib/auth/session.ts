@@ -3,6 +3,8 @@ import { UserRole } from "@prisma/client";
 
 import { ADMIN_ROLES } from "@/config/site";
 import { authOptions } from "@/lib/auth/auth";
+import { prisma } from "@/lib/db/prisma";
+import { isDatabaseConfigured } from "@/lib/db/safe-query";
 
 export type AuthSession = {
   user: {
@@ -37,6 +39,17 @@ export async function requireAuth(): Promise<AuthSession> {
   if (!session) {
     throw new AuthError("Authentication required");
   }
+
+  if (isDatabaseConfigured()) {
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { suspended: true },
+    });
+    if (user?.suspended) {
+      throw new AuthError("Account suspended", 403);
+    }
+  }
+
   return session;
 }
 

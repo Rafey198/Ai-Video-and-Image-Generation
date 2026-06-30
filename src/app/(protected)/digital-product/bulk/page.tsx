@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, Package, Sparkles } from "lucide-react";
+import { Loader2, Package } from "lucide-react";
 import { GenerationDataMode } from "@prisma/client";
 
 import { Button } from "@/components/ui/button";

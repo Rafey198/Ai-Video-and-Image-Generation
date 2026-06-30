@@ -11,89 +11,87 @@ import type {
   ProviderSubmitResult,
 } from "@/lib/ai/providers/types";
 
-type MockJobRecord = {
-  status: ProviderJobStatus;
-  progress: number;
-  createdAt: number;
-  request: GenerationRequest;
-  outputs?: GenerationOutput[];
-  errorMessage?: string;
-};
+const COMPLETION_DELAY_MS = 2_000;
 
-const MOCK_JOBS = new Map<string, MockJobRecord>();
-const COMPLETION_DELAY_MS = 2_500;
-const PROGRESS_INTERVAL_MS = 500;
+const PLACEHOLDER_ASSETS = {
+  image: "/placeholders/image-placeholder.svg",
+  video: "/placeholders/video-placeholder.svg",
+  audio: "/placeholders/audio-placeholder.svg",
+} as const;
 
-function placeholderUrl(type: string, index = 0): string {
-  const base = SITE_CONFIG.url.replace(/\/$/, "");
-  const id = randomUUID();
-
-  if (type === "video" || type.includes("video")) {
-    return `${base}/placeholders/video-${id}.mp4`;
-  }
-  if (type === "audio" || type.includes("audio")) {
-    return `${base}/placeholders/audio-${id}.mp3`;
-  }
-  return `${base}/placeholders/image-${id}-${index}.png`;
+function placeholderUrl(type: string): string {
+  if (type.includes("video")) return PLACEHOLDER_ASSETS.video;
+  if (type.includes("audio")) return PLACEHOLDER_ASSETS.audio;
+  return PLACEHOLDER_ASSETS.image;
 }
 
 function inferMimeType(type: string): string {
-  if (type === "video" || type.includes("video")) return "video/mp4";
-  if (type === "audio" || type.includes("audio")) return "audio/mpeg";
-  return "image/png";
+  if (type.includes("video")) return "video/mp4";
+  if (type.includes("audio")) return "audio/mpeg";
+  return "image/svg+xml";
 }
 
-function simulateProgress(jobId: string) {
-  const record = MOCK_JOBS.get(jobId);
-  if (!record || record.status === "canceled" || record.status === "failed") {
-    return;
-  }
+function buildOutputs(request: GenerationRequest): GenerationOutput[] {
+  const batchSize = Number(request.settings.batchSize ?? 1);
+  const count = Math.max(1, Math.min(4, batchSize));
+  const url = placeholderUrl(request.type);
 
-  const elapsed = Date.now() - record.createdAt;
+  return Array.from({ length: count }, () => ({
+    url,
+    thumbnailUrl: url,
+    mimeType: inferMimeType(request.type),
+    width: 1024,
+    height: 1024,
+    duration:
+      request.type.includes("video") || request.type.includes("audio")
+        ? Number(request.settings.duration ?? 5)
+        : undefined,
+    metadata: { mock: true, provider: "mock", demo: SITE_CONFIG.demoMode },
+  }));
+}
+
+/** Stateless mock — encodes submit timestamp in providerJobId for serverless compatibility. */
+function parseMockTimestamp(providerJobId: string): number {
+  const match = providerJobId.match(/^mock-(\d+)-/);
+  return match ? Number(match[1]) : Date.now();
+}
+
+function statelessPoll(
+  providerJobId: string,
+  request?: GenerationRequest
+): ProviderPollResult {
+  const startedAt = parseMockTimestamp(providerJobId);
+  const elapsed = Date.now() - startedAt;
   const progress = Math.min(100, Math.floor((elapsed / COMPLETION_DELAY_MS) * 100));
-  record.progress = progress;
-  record.status = progress >= 100 ? "completed" : "processing";
 
-  if (record.status === "completed") {
-    const batchSize = Number(record.request.settings.batchSize ?? 1);
-    const count = Math.max(1, Math.min(4, batchSize));
-    record.outputs = Array.from({ length: count }, (_, index) => ({
-      url: placeholderUrl(record.request.type, index),
-      thumbnailUrl: placeholderUrl(record.request.type, index),
-      mimeType: inferMimeType(record.request.type),
-      width: 1024,
-      height: 1024,
-      duration:
-        record.request.type.includes("video") || record.request.type.includes("audio")
-          ? Number(record.request.settings.duration ?? 5)
-          : undefined,
-      metadata: { mock: true, provider: "mock" },
-    }));
+  if (progress >= 100) {
+    return {
+      status: "completed",
+      progress: 100,
+      outputs: request ? buildOutputs(request) : buildOutputs({ type: "image", settings: {}, jobId: "", modelSlug: "" }),
+    };
   }
 
-  MOCK_JOBS.set(jobId, record);
+  return {
+    status: elapsed > 300 ? "processing" : "queued",
+    progress: Math.max(5, progress),
+  };
 }
 
 export class MockProvider implements ProviderAdapter {
   readonly slug = "mock";
 
-  async submit(request: GenerationRequest): Promise<ProviderSubmitResult> {
-    const providerJobId = randomUUID();
-    MOCK_JOBS.set(providerJobId, {
-      status: "queued",
-      progress: 0,
-      createdAt: Date.now(),
-      request,
-    });
+  // Cache last request per job for output generation (short-lived, optional)
+  private static requestCache = new Map<string, GenerationRequest>();
 
-    setTimeout(() => simulateProgress(providerJobId), PROGRESS_INTERVAL_MS);
-    const interval = setInterval(() => {
-      simulateProgress(providerJobId);
-      const record = MOCK_JOBS.get(providerJobId);
-      if (!record || record.status === "completed" || record.status === "failed") {
-        clearInterval(interval);
-      }
-    }, PROGRESS_INTERVAL_MS);
+  async submit(request: GenerationRequest): Promise<ProviderSubmitResult> {
+    const providerJobId = `mock-${Date.now()}-${randomUUID()}`;
+    MockProvider.requestCache.set(providerJobId, request);
+    // Evict old entries
+    if (MockProvider.requestCache.size > 100) {
+      const first = MockProvider.requestCache.keys().next().value;
+      if (first) MockProvider.requestCache.delete(first);
+    }
 
     return {
       providerJobId,
@@ -103,30 +101,18 @@ export class MockProvider implements ProviderAdapter {
   }
 
   async poll(providerJobId: string): Promise<ProviderPollResult> {
-    const record = MOCK_JOBS.get(providerJobId);
-    if (!record) {
-      return {
-        status: "failed",
-        errorMessage: "Mock job not found",
-      };
+    const request = MockProvider.requestCache.get(providerJobId);
+    const result = statelessPoll(providerJobId, request);
+
+    if (result.status === "completed") {
+      MockProvider.requestCache.delete(providerJobId);
     }
 
-    simulateProgress(providerJobId);
-    const updated = MOCK_JOBS.get(providerJobId)!;
-
-    return {
-      status: updated.status,
-      progress: updated.progress,
-      outputs: updated.outputs,
-      errorMessage: updated.errorMessage,
-    };
+    return result;
   }
 
   async cancel(providerJobId: string): Promise<void> {
-    const record = MOCK_JOBS.get(providerJobId);
-    if (!record) return;
-    record.status = "canceled";
-    MOCK_JOBS.set(providerJobId, record);
+    MockProvider.requestCache.delete(providerJobId);
   }
 
   mapStatus(status: ProviderJobStatus): JobStatus {

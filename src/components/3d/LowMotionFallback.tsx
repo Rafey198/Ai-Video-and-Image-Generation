@@ -60,13 +60,13 @@ function EngineFallback({ mode }: { mode?: string }) {
       <div
         className={cn(
           "h-16 w-16 rounded-full border-2 border-violet-glow/60",
-          isActive ? "animate-pulse-glow" : "animate-spin-slow",
+          isActive ? "motion-reduce:animate-none animate-pulse-glow" : "motion-reduce:animate-none animate-spin-slow",
         )}
         style={{
           boxShadow: "0 0 30px rgba(139, 92, 246, 0.4), inset 0 0 20px rgba(34, 211, 238, 0.2)",
         }}
       />
-      <div className="absolute h-8 w-8 rounded-md border border-cyan-aurora/50 bg-cyan-aurora/10 animate-float" />
+      <div className="absolute h-8 w-8 rounded-md border border-cyan-aurora/50 bg-cyan-aurora/10 motion-reduce:animate-none animate-float" />
     </div>
   );
 }
@@ -74,7 +74,7 @@ function EngineFallback({ mode }: { mode?: string }) {
 function OrbitFallback() {
   return (
     <div className="absolute inset-0 flex items-center justify-center">
-      <div className="relative h-24 w-24 animate-spin-slow">
+      <div className="relative h-24 w-24 motion-reduce:animate-none animate-spin-slow">
         {[0, 120, 240].map((deg) => (
           <div
             key={deg}

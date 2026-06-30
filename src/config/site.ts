@@ -55,7 +55,6 @@ export const FOOTER_LINKS = {
   company: [
     { href: "/about", label: "About" },
     { href: "/blog", label: "Blog" },
-    { href: "/careers", label: "Careers" },
     { href: "/contact", label: "Contact" },
     { href: "/support", label: "Support" },
   ],
@@ -63,17 +62,13 @@ export const FOOTER_LINKS = {
     { href: "/privacy", label: "Privacy Policy" },
     { href: "/terms", label: "Terms of Service" },
     { href: "/cookies", label: "Cookie Policy" },
-    { href: "/acceptable-use", label: "Acceptable Use" },
-    { href: "/dmca", label: "DMCA" },
-    { href: "/security", label: "Security" },
+    { href: "/safety", label: "Safety Policy" },
   ],
 };
 
 export const SOCIAL_LINKS = [
-  { href: "#", label: "Twitter", icon: "Twitter" },
-  { href: "#", label: "GitHub", icon: "Github" },
-  { href: "#", label: "Discord", icon: "MessageCircle" },
-  { href: "#", label: "YouTube", icon: "Youtube" },
+  { href: "https://github.com/Rafey198/Ai-Video-and-Image-Generation", label: "GitHub", icon: "Github" },
+  { href: "/contact", label: "Contact", icon: "MessageCircle" },
 ] as const;
 
 export const DASHBOARD_NAV = [

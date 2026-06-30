@@ -77,7 +77,7 @@ export default function EnterprisePage() {
         title="Prefer to start small?"
         subtitle="Try VireoMorph with a free account, then upgrade when your team is ready."
         primaryLabel="Start free"
-        primaryHref="/register"
+        primaryHref="/signup"
         secondaryLabel="View pricing"
         secondaryHref="/pricing"
       />

@@ -2,6 +2,7 @@ import { processJob } from "@/lib/ai/jobs";
 import { errorResponse, handleApiError, json } from "@/lib/api/handler";
 import { requireAuth } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
+import { generationRateLimit } from "@/lib/security/rate-limit";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -17,6 +18,11 @@ export async function GET(_request: Request, context: RouteContext) {
 
     if (!existing) {
       return errorResponse("Job not found", 404);
+    }
+
+    const rateLimit = generationRateLimit(`jobs:poll:${session.user.id}`);
+    if (!rateLimit.success) {
+      return errorResponse("Poll rate limit exceeded", 429);
     }
 
     const job = await processJob(id);

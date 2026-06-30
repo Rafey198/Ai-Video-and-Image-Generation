@@ -44,7 +44,7 @@ export function HeroSection({ children }: HeroSectionProps) {
           </p>
           <div className="mt-8 flex flex-wrap gap-4">
             <Button variant="gradient" size="lg" asChild>
-              <Link href="/register">
+              <Link href="/signup">
                 Start creating free
                 <ArrowRight className="ml-1 h-4 w-4" />
               </Link>

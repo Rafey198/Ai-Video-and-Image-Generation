@@ -32,7 +32,7 @@ export default function FeaturesPage() {
       <CTASection
         title="Experience every module"
         subtitle="Start with 100 free credits and explore the full creative engine today."
-        primaryHref="/register"
+        primaryHref="/signup"
         secondaryHref="/models"
         secondaryLabel="Browse models"
       />

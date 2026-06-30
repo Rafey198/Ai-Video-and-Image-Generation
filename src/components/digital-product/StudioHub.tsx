@@ -17,7 +17,7 @@ import {
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { STUDIO_SECTIONS } from "@/lib/digital-product/constants";
 
 const ICON_MAP: Record<string, LucideIcon> = {

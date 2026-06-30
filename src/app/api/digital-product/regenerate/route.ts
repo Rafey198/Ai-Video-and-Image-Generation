@@ -1,5 +1,4 @@
 import { NextRequest } from "next/server";
-import { DigitalProductType } from "@prisma/client";
 import { z } from "zod";
 
 import { handleApiError, json } from "@/lib/api/handler";

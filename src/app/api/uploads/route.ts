@@ -6,6 +6,7 @@ import { requireAuth } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/prisma";
 import { generationRateLimit } from "@/lib/security/rate-limit";
 import { getStorageProvider } from "@/lib/storage";
+import { sanitizeFilename } from "@/lib/storage/signed-url";
 import { generationUploadSchema } from "@/lib/validation/generation";
 
 function inferMediaType(mimeType: string): MediaType {
@@ -41,7 +42,7 @@ export async function POST(request: Request) {
     const { url, key } = await storage.upload(buffer, {
       contentType: file.type,
       folder: `users/${session.user.id}`,
-      filename: file.name,
+      filename: sanitizeFilename(file.name),
     });
 
     const mediaType = inferMediaType(file.type);
