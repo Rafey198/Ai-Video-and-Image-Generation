@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" fill="none">
+  <defs>
+    <linearGradient id="vbg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a0a0f"/>
+      <stop offset="100%" stop-color="#15102a"/>
+    </linearGradient>
+    <linearGradient id="vaccent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#8B5CF6"/>
+      <stop offset="50%" stop-color="#6366F1"/>
+      <stop offset="100%" stop-color="#22D3EE"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#vbg)"/>
+  <rect x="80" y="80" width="1760" height="920" rx="16" fill="#111118" stroke="#2a2a35" stroke-width="2"/>
+  <circle cx="960" cy="480" r="100" fill="url(#vaccent)" opacity="0.2"/>
+  <polygon points="860,520 960,380 1060,520 960,620" fill="url(#vaccent)" opacity="0.5"/>
+  <rect x="860" y="600" width="200" height="12" rx="6" fill="#374151"/>
+  <rect x="200" y="960" width="1520" height="6" rx="3" fill="#1f2937"/>
+  <rect x="200" y="960" width="680" height="6" rx="3" fill="url(#vaccent)" opacity="0.7"/>
+  <circle cx="1880" cy="60" r="28" fill="#ef4444" opacity="0.9"/>
+  <text x="1880" y="66" text-anchor="middle" fill="white" font-family="system-ui,sans-serif" font-size="14" font-weight="700">REC</text>
+  <text x="960" y="900" text-anchor="middle" fill="#6b7280" font-family="system-ui,sans-serif" font-size="32" font-weight="500">Video Placeholder</text>
+  <text x="960" y="940" text-anchor="middle" fill="#4b5563" font-family="system-ui,sans-serif" font-size="20">VireoMorph Demo · 1920×1080</text>
+</svg>

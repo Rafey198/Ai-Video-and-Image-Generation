@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f0f14"/>
+      <stop offset="50%" stop-color="#1a1528"/>
+      <stop offset="100%" stop-color="#0d1117"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8B5CF6"/>
+      <stop offset="100%" stop-color="#22D3EE"/>
+    </linearGradient>
+    <linearGradient id="mountain" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#2d2640"/>
+      <stop offset="100%" stop-color="#14101f"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <circle cx="512" cy="280" r="120" fill="url(#accent)" opacity="0.15"/>
+  <circle cx="512" cy="280" r="80" fill="url(#accent)" opacity="0.25"/>
+  <path d="M0 720 L256 480 L448 600 L640 400 L896 560 L1024 480 L1024 1024 L0 1024 Z" fill="url(#mountain)" opacity="0.8"/>
+  <rect x="380" y="340" width="264" height="200" rx="12" fill="none" stroke="url(#accent)" stroke-width="3" opacity="0.5"/>
+  <circle cx="420" cy="400" r="24" fill="none" stroke="#8B5CF6" stroke-width="2" opacity="0.6"/>
+  <path d="M460 480 L540 400 L620 440 L660 380" stroke="#22D3EE" stroke-width="2" fill="none" opacity="0.5"/>
+  <text x="512" y="880" text-anchor="middle" fill="#6b7280" font-family="system-ui,sans-serif" font-size="28" font-weight="500">Image Placeholder</text>
+  <text x="512" y="920" text-anchor="middle" fill="#4b5563" font-family="system-ui,sans-serif" font-size="18">VireoMorph Demo</text>
+</svg>

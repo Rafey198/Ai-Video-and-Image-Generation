@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" fill="none">
+  <defs>
+    <linearGradient id="gbg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f0f14"/>
+      <stop offset="50%" stop-color="#1a1030"/>
+      <stop offset="100%" stop-color="#0d1520"/>
+    </linearGradient>
+    <linearGradient id="gicon" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8B5CF6"/>
+      <stop offset="100%" stop-color="#22D3EE"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" rx="20" fill="url(#gbg)"/>
+  <rect x="24" y="24" width="752" height="552" rx="16" fill="none" stroke="url(#gicon)" stroke-width="1" opacity="0.3"/>
+  <rect x="280" y="160" width="240" height="200" rx="16" fill="url(#gicon)" opacity="0.12"/>
+  <rect x="310" y="190" width="80" height="60" rx="8" fill="url(#gicon)" opacity="0.4"/>
+  <polygon points="410,220 410,260 450,240" fill="white" opacity="0.7"/>
+  <path d="M320 380 Q400 320 480 380 T640 380" stroke="url(#gicon)" stroke-width="2" fill="none" opacity="0.5"/>
+  <circle cx="200" cy="300" r="4" fill="#8B5CF6" opacity="0.6"/>
+  <circle cx="600" cy="300" r="4" fill="#22D3EE" opacity="0.6"/>
+  <circle cx="400" cy="120" r="4" fill="#A78BFA" opacity="0.6"/>
+  <text x="400" y="460" text-anchor="middle" fill="#9ca3af" font-family="system-ui,sans-serif" font-size="24" font-weight="500">Media Placeholder</text>
+  <text x="400" y="500" text-anchor="middle" fill="#6b7280" font-family="system-ui,sans-serif" font-size="16">VireoMorph · Demo Mode</text>
+</svg>

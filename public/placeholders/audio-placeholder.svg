@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="400" viewBox="0 0 1200 400" fill="none">
+  <defs>
+    <linearGradient id="abg" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0f0f14"/>
+      <stop offset="100%" stop-color="#1a1528"/>
+    </linearGradient>
+    <linearGradient id="awave" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#8B5CF6"/>
+      <stop offset="50%" stop-color="#A78BFA"/>
+      <stop offset="100%" stop-color="#22D3EE"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="400" rx="16" fill="url(#abg)"/>
+  <rect x="40" y="40" width="1120" height="320" rx="12" fill="#111118" stroke="#2a2a35" stroke-width="1"/>
+  <path d="M60 200 Q80 120 100 200 T140 200 T180 160 T220 200 T260 240 T300 200 T340 180 T380 200 T420 220 T460 200 T500 140 T540 200 T580 260 T620 200 T660 190 T700 200 T740 210 T780 200 T820 170 T860 200 T900 230 T940 200 T980 150 T1020 200 T1060 240 T1100 200 T1140 200" stroke="url(#awave)" stroke-width="3" fill="none" opacity="0.8"/>
+  <path d="M60 220 Q80 280 100 220 T140 220 T180 260 T220 220 T260 180 T300 220 T340 240 T380 220 T420 200 T460 220 T500 280 T540 220 T580 160 T620 220 T660 230 T700 220 T740 210 T780 220 T820 250 T860 220 T900 190 T940 220 T980 270 T1020 220 T1060 180 T1100 220 T1140 220" stroke="url(#awave)" stroke-width="2" fill="none" opacity="0.35"/>
+  <circle cx="100" cy="80" r="36" fill="url(#awave)" opacity="0.3"/>
+  <polygon points="88,68 88,92 108,80" fill="white" opacity="0.9"/>
+  <text x="160" y="88" fill="#e5e7eb" font-family="system-ui,sans-serif" font-size="22" font-weight="600">Ambient Track</text>
+  <text x="160" y="116" fill="#6b7280" font-family="system-ui,sans-serif" font-size="14">0:30 · Demo audio</text>
+  <text x="600" y="360" text-anchor="middle" fill="#4b5563" font-family="system-ui,sans-serif" font-size="16">Audio Placeholder · VireoMorph Demo</text>
+</svg>

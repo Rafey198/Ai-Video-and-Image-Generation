@@ -1,0 +1,671 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  user
+  creator
+  team_admin
+  developer
+  admin
+  super_admin
+}
+
+enum JobStatus {
+  queued
+  processing
+  completed
+  failed
+  canceled
+}
+
+enum MediaType {
+  image
+  video
+  audio
+  other
+}
+
+enum TransactionType {
+  generation
+  refund
+  purchase
+  admin_grant
+  subscription
+  bonus
+}
+
+enum LicenseStatus {
+  permissive
+  open_weight_check_license
+  non_commercial_check_required
+  research_only
+  commercial_license_required
+  unknown_check_required
+}
+
+enum Visibility {
+  private
+  workspace
+  public
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?
+  role          UserRole  @default(user)
+  suspended     Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts           Account[]
+  sessions           Session[]
+  creditWallet       CreditWallet?
+  creditTransactions CreditTransaction[]
+  subscriptions      Subscription[]
+  generationJobs     GenerationJob[]
+  mediaAssets        MediaAsset[]
+  prompts            Prompt[]
+  uploads            Upload[]
+  projects           Project[]
+  notifications      Notification[]
+  apiKeys            ApiKey[]
+  favorites          MediaFavorite[]
+  workspaceMembers   WorkspaceMember[]
+  auditLogs          AdminAuditLog[]     @relation("AdminUser")
+  moderatedEvents    ModerationEvent[]
+
+  @@index([email])
+  @@index([role])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  ownerId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members        WorkspaceMember[]
+  projects       Project[]
+  generationJobs GenerationJob[]
+  mediaAssets    MediaAsset[]
+
+  @@index([slug])
+}
+
+model WorkspaceMember {
+  id          String   @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        UserRole @default(user)
+  joinedAt    DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([userId])
+}
+
+model Plan {
+  id              String   @id @default(cuid())
+  name            String
+  slug            String   @unique
+  description     String?
+  monthlyCredits  Int      @default(0)
+  priceMonthly    Float    @default(0)
+  priceYearly     Float    @default(0)
+  maxTeamMembers  Int      @default(1)
+  features        Json     @default("[]")
+  stripePriceId   String?
+  active          Boolean  @default(true)
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  subscriptions Subscription[]
+
+  @@index([slug])
+}
+
+model Subscription {
+  id               String    @id @default(cuid())
+  userId           String
+  planId           String
+  status           String    @default("active")
+  stripeCustomerId String?
+  stripeSubId      String?
+  currentPeriodEnd DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan Plan @relation(fields: [planId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+}
+
+model CreditWallet {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  balance   Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model CreditTransaction {
+  id          String          @id @default(cuid())
+  userId      String
+  amount      Int
+  type        TransactionType
+  description String?
+  jobId       String?
+  metadata    Json?
+  createdAt   DateTime        @default(now())
+
+  user User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job  GenerationJob? @relation(fields: [jobId], references: [id])
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([type])
+}
+
+model ModelProvider {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  type        String
+  endpoint    String?
+  apiKeyHint  String?
+  enabled     Boolean  @default(true)
+  healthy     Boolean  @default(true)
+  config      Json     @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  models AiModel[]
+
+  @@index([slug])
+}
+
+model AiModel {
+  id                         String        @id @default(cuid())
+  name                       String
+  slug                       String        @unique
+  providerId                 String?
+  category                   String
+  taskType                   String
+  description                String?       @db.Text
+  inputTypes                 Json          @default("[]")
+  outputTypes                Json          @default("[]")
+  supportedModes             Json          @default("[]")
+  minDuration                Float?
+  maxDuration                Float?
+  fixedDuration              Float?
+  supportedAspectRatios      Json          @default("[]")
+  supportedResolutions       Json          @default("[]")
+  supportsAudio              Boolean       @default(false)
+  supportsVideo              Boolean       @default(false)
+  supportsImage              Boolean       @default(true)
+  supportsPrompt             Boolean       @default(true)
+  supportsNegativePrompt     Boolean       @default(false)
+  supportsSeed               Boolean       @default(false)
+  supportsReferenceImage     Boolean       @default(false)
+  supportsReferenceVideo     Boolean       @default(false)
+  supportsLipSync            Boolean       @default(false)
+  supportsInpainting         Boolean       @default(false)
+  supportsUpscaling          Boolean       @default(false)
+  supportsIdentityPreservation Boolean     @default(false)
+  estimatedRuntime           Int?
+  creditCostBase             Int           @default(1)
+  creditCostPerSecond        Float         @default(0)
+  licenseStatus              LicenseStatus @default(unknown_check_required)
+  commercialUseNote          String?       @db.Text
+  enabled                    Boolean       @default(true)
+  featured                   Boolean       @default(false)
+  safetyCategory             String?
+  createdAt                  DateTime      @default(now())
+  updatedAt                  DateTime      @updatedAt
+
+  provider       ModelProvider?    @relation(fields: [providerId], references: [id])
+  capabilities   ModelCapability[]
+  generationJobs GenerationJob[]
+
+  @@index([slug])
+  @@index([category])
+  @@index([taskType])
+  @@index([enabled])
+  @@index([providerId])
+}
+
+model ModelCapability {
+  id        String  @id @default(cuid())
+  modelId   String
+  key       String
+  value     String
+  model     AiModel @relation(fields: [modelId], references: [id], onDelete: Cascade)
+
+  @@index([modelId])
+}
+
+model GenerationJob {
+  id              String    @id @default(cuid())
+  userId          String
+  workspaceId     String?
+  modelId         String
+  projectId       String?
+  status          JobStatus @default(queued)
+  type            String
+  prompt          String?   @db.Text
+  negativePrompt  String?   @db.Text
+  settings        Json      @default("{}")
+  providerJobId   String?
+  creditsCost     Int       @default(0)
+  errorMessage    String?   @db.Text
+  progress        Int       @default(0)
+  startedAt       DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace          Workspace?          @relation(fields: [workspaceId], references: [id])
+  model              AiModel             @relation(fields: [modelId], references: [id])
+  project            Project?            @relation(fields: [projectId], references: [id])
+  generationSettings GenerationSetting?
+  mediaAssets        MediaAsset[]
+  creditTransactions CreditTransaction[]
+  webhookEvents      WebhookEvent[]
+
+  @@index([userId])
+  @@index([workspaceId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([modelId])
+}
+
+model GenerationSetting {
+  id        String @id @default(cuid())
+  jobId     String @unique
+  settings  Json   @default("{}")
+  job       GenerationJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+}
+
+model Prompt {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String?
+  content   String   @db.Text
+  negative  String?  @db.Text
+  tags      Json     @default("[]")
+  favorite  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model PromptTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  category    String
+  content     String   @db.Text
+  description String?
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
+}
+
+model StylePreset {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  category    String
+  description String?
+  thumbnail   String?
+  settings    Json     @default("{}")
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
+}
+
+model MediaAsset {
+  id           String     @id @default(cuid())
+  userId       String
+  workspaceId  String?
+  jobId        String?
+  folderId     String?
+  type         MediaType
+  title        String?
+  description  String?
+  url          String
+  thumbnailUrl String?
+  mimeType     String?
+  fileSize     Int?
+  width        Int?
+  height       Int?
+  duration     Float?
+  visibility   Visibility @default(private)
+  metadata     Json       @default("{}")
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace?      @relation(fields: [workspaceId], references: [id])
+  job         GenerationJob?  @relation(fields: [jobId], references: [id])
+  folder      MediaFolder?    @relation(fields: [folderId], references: [id])
+  favorites   MediaFavorite[]
+  projectAssets ProjectAsset[]
+
+  @@index([userId])
+  @@index([workspaceId])
+  @@index([type])
+  @@index([visibility])
+  @@index([createdAt])
+  @@index([folderId])
+}
+
+model MediaFolder {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  parentId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  assets   MediaAsset[]
+  parent   MediaFolder?  @relation("FolderHierarchy", fields: [parentId], references: [id])
+  children MediaFolder[] @relation("FolderHierarchy")
+
+  @@index([userId])
+}
+
+model MediaFavorite {
+  id        String   @id @default(cuid())
+  userId    String
+  assetId   String
+  createdAt DateTime @default(now())
+
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  asset MediaAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, assetId])
+  @@index([userId])
+}
+
+model Upload {
+  id        String   @id @default(cuid())
+  userId    String
+  filename  String
+  url       String
+  mimeType  String
+  fileSize  Int
+  type      MediaType
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  userId      String
+  workspaceId String?
+  name        String
+  description String?
+  settings    Json     @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace      Workspace?      @relation(fields: [workspaceId], references: [id])
+  generationJobs GenerationJob[]
+  assets         ProjectAsset[]
+
+  @@index([userId])
+  @@index([workspaceId])
+}
+
+model ProjectAsset {
+  id        String @id @default(cuid())
+  projectId String
+  assetId   String
+  sortOrder Int    @default(0)
+
+  project Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  asset   MediaAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, assetId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String   @default("info")
+  read      Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt])
+}
+
+model ApiKey {
+  id         String    @id @default(cuid())
+  userId     String?
+  name       String
+  keyHash    String
+  keyHint    String
+  scopes     Json      @default("[]")
+  lastUsedAt DateTime?
+  expiresAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model WebhookEvent {
+  id        String   @id @default(cuid())
+  jobId     String?
+  source    String
+  event     String
+  payload   Json
+  processed Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  job GenerationJob? @relation(fields: [jobId], references: [id])
+
+  @@index([jobId])
+  @@index([createdAt])
+}
+
+model ModerationRule {
+  id          String   @id @default(cuid())
+  name        String
+  category    String
+  description String?
+  pattern     String?
+  action      String   @default("block")
+  enabled     Boolean  @default(true)
+  severity    String   @default("high")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  events ModerationEvent[]
+
+  @@index([category])
+  @@index([enabled])
+}
+
+model ModerationEvent {
+  id        String   @id @default(cuid())
+  ruleId    String?
+  userId    String?
+  content   String?  @db.Text
+  action    String
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now())
+
+  rule ModerationRule? @relation(fields: [ruleId], references: [id])
+  user User?           @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model AdminAuditLog {
+  id        String   @id @default(cuid())
+  adminId   String
+  action    String
+  target    String?
+  details   Json     @default("{}")
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  admin User @relation("AdminUser", fields: [adminId], references: [id])
+
+  @@index([adminId])
+  @@index([createdAt])
+}
+
+model SystemLog {
+  id        String   @id @default(cuid())
+  level     String   @default("info")
+  category  String
+  message   String   @db.Text
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now())
+
+  @@index([category])
+  @@index([level])
+  @@index([createdAt])
+}
+
+model FeatureFlag {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  name        String
+  description String?
+  enabled     Boolean  @default(false)
+  config      Json     @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([key])
+}
+
+model SiteContent {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  section   String
+  title     String?
+  content   String?  @db.Text
+  metadata  Json     @default("{}")
+  updatedAt DateTime @updatedAt
+
+  @@index([section])
+}
+
+model BlogPost {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  title       String
+  excerpt     String?
+  content     String    @db.Text
+  coverImage  String?
+  category    String    @default("tutorial")
+  published   Boolean   @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([slug])
+  @@index([published])
+}
+
+model ShowcaseItem {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  mediaType   MediaType
+  mediaUrl    String
+  thumbnailUrl String?
+  style       String?
+  modelSlug   String?
+  featured    Boolean   @default(false)
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+
+  @@index([mediaType])
+  @@index([featured])
+}
